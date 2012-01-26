@@ -1,0 +1,62 @@
+#!/usr/bin/python
+# Script Name: pharospopup
+# Script Function:
+#	This is a CUPS backend for the Pharos Remote Printing LPD Server.
+# Save this file in your CUPS backend directory, usually
+# /usr/lib/cups/backend/ or /usr/local/lib/cups/backend/
+#
+# Mark this filter world-readable and world-executable. Restart CUPS to
+# make the new backend known to the spooler.
+#
+# See http://www.openprinting.org/cups-doc.html and the additional
+# instructions below.
+#
+# Usage: 
+#
+# cp pharos /usr/lib/cups/backend/
+# chmod 755 /usr/lib/cups/backend/pharos
+# killall -HUP cupsd (or "/etc/init.d/cups restart")
+# lpadmin -p <queue name> -E -v pharos://<print server address>/<print queue>
+#
+# with 
+#   <print server address>:     The DNS name or IP address of the print server
+#   <print queue>:		The name of the LPD queue on the print server
+# Example URIs:
+# pharos://printserver.university.edu/HP_LaserJet
+# 
+#	This will print to a Pharos Uniprint Print server with DNS name printserver.university.edu and print queue HP_LaserJet
+#
+#
+#
+# Author: Junaid Ali
+# Version: 1.0
+
+__version__ = '1.0'
+__title__ = 'CUPS backend for Pharos Remote Printing'
+__doc__ = 'CUPS backend for popup based printing to Pharos LPD server'
+
+# Imports ============================================
+import sys
+
+
+
+# Class Declaration ==================================
+
+
+
+
+
+
+
+# Function Declaration ===============================
+def main():
+	"""
+	The main function of the script
+	"""
+	print 'Running %s' %sys.argv[0]
+
+
+# Main Script ========================================
+if __name__ == "__main__":
+	main()
+

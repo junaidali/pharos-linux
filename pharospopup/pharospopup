@@ -1,0 +1,33 @@
+#!/usr/bin/python
+# Script Name: pharospopup
+# Script Function:
+#	This is the pharospopup server that is run at users login to the desktop GUI session. It receives messages from the pharos CUPS backend and shows a dialog to the users for input
+# 
+# Author: Junaid Ali
+# Version: 1.0
+
+# Imports ============================================
+import sys
+
+
+# Class Declaration ==================================
+
+
+
+
+
+
+
+# Function Declaration ===============================
+def main():
+	"""
+	The main function of the script
+	"""
+	print 'Running %s' sys.argv[0]
+	
+
+
+# Main Script ========================================
+if __name__ == "__main__":
+	main()
+

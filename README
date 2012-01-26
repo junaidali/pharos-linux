@@ -1,0 +1,13 @@
+README
+=====
+
+This program provides a linux equivalent of the Pharos Remote Printing Package available for Windows and Macintosh clients. This package will install a new CUPS backend that will allow printing to lpd queues on the pharos uniprint print server. Also it will install a new pharos popup server that will allow for users to input their ID's to be tied with the print jobs they send.
+
+CUPS Backend
+============
+
+
+
+Pharos Popup Server
+===================
+
