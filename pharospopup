@@ -13,6 +13,7 @@ import ConfigParser
 import os
 import logging
 import logging.config
+import syslog
 
 # Script Variables ===================================
 configFilePath = os.path.join(os.getenv("HOME"),'.pharos')
@@ -82,14 +83,15 @@ class wxPopupFrame(wx.Frame):
 		self.Centre()           
 
 	def updateConfig(self,  userId):
+		# Delete old file if it exists
+		if os.path.exists(configFilePath):
+			os.remove(configFilePath)
 		config = ConfigParser.SafeConfigParser({'cachedid':'None',  'currentid': 'None'})
-		config.read(configFilePath)
-		cachedId = config.get("pharos",  "cachedid")             
-		config.set("pharos",  "currentid",  userId)
-		config.set("pharos",  "cachedid",  userId)
-		configfh = open(configFilePath,  'wb')
-		config.write(configfh)
-		configfh.close()
+		config.add_section('pharos')
+		config.set("pharos",  "currentid", userId)
+		config.set("pharos",  "cachedid", userId)
+		with open(configFilePath,  'wb') as configFile:
+			config.write(configFile)		
 		logger.info("Successfully updated config file with currentid = %s" %(userId))
 
 	def printCommand(self, event):
@@ -109,6 +111,7 @@ class wxPopupFrame(wx.Frame):
 
 	def cancelCommand(self, event):
 		"""Handle the users choice of clicking the cancel button"""
+		logger.warn('User chose to cancel the print job')
 		self.Destroy()            
 
 class wxRemotePrintingPopupApp(wx.App):
@@ -133,15 +136,18 @@ def getUserIDUsingWxWindow():
 def main():
 	"""
 	The main function of the script
-	"""
-	# Initiate logger
-	print 'Initiating logger using config file %s' %loggingConfigFilePath
-	logging.config.fileConfig(loggingConfigFilePath)
-	logger = logging.getLogger('pharospopup')	
-    
+	"""	
 	logger.debug('Running ', sys.argv[0])
 	getUserIDUsingWxWindow()
 
 # Main Script ========================================
-if __name__ == "__main__":
+# Initiate logger	
+try:
+	logging.config.fileConfig(loggingConfigFilePath)
+	logger = logging.getLogger('pharospopup')	    
+except (TypeError, ConfigParser.NoSectionError):
+	syslog.syslog(syslog.LOG_ERR, '%s could not instantiate logging using config file %s. Exiting' %(sys.argv[0], loggingConfigFilePath))
+	sys.exit(1)
+
+if __name__ == "__main__":	
 	main()
