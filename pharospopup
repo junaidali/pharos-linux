@@ -106,8 +106,8 @@ class wxPopupFrame(wx.Frame):
 			# Write to config file
 			logger.info("Updating config file on user input %s" %(self.userInputTextCtrl.GetValue().strip()))
 			self.updateConfig(self.userInputTextCtrl.GetValue().strip())
-		self.Destroy()
-		event.Skip()
+			self.Destroy()
+			event.Skip()
 
 	def cancelCommand(self, event):
 		"""Handle the users choice of clicking the cancel button"""
