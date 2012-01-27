@@ -11,9 +11,13 @@ import sys
 import wx
 import ConfigParser
 import os
+import logging
+import logging.config
 
 # Script Variables ===================================
 configFilePath = os.path.join(os.getenv("HOME"),'.pharos')
+logFilePath = '/var/tmp/pharospopup.log'
+loggingConfigFilePath = os.path.join(os.getcwd(), 'pharos.conf')
 
 # Class Declaration ==================================
 class wxPopupFrame(wx.Frame):
@@ -131,11 +135,12 @@ def main():
 	The main function of the script
 	"""
 	# Initiate logger
-	
-	print 'Running ', sys.argv[0]
+	print 'Initiating logger using config file %s' %loggingConfigFilePath
+	logging.config.fileConfig(loggingConfigFilePath)
+	logger = logging.getLogger('pharospopup')	
+    
+	logger.debug('Running ', sys.argv[0])
 	getUserIDUsingWxWindow()
-
-
 
 # Main Script ========================================
 if __name__ == "__main__":
