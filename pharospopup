@@ -8,26 +8,135 @@
 
 # Imports ============================================
 import sys
+import wx
+import ConfigParser
+import os
 
+# Script Variables ===================================
+configFilePath = os.path.join(os.getenv("HOME"),'.pharos')
 
 # Class Declaration ==================================
+class wxPopupFrame(wx.Frame):
+	"""This is the frame for our application, it is derived from
+	the wx.Frame element."""
 
+	def __init__(self, *args, **kwargs):
+		"""Initialize, and let the user set any Frame settings"""
+		wx.Frame.__init__(self, *args, **kwargs)
+		self.create_controls()                         
 
+	def create_controls(self):
+		"""Called when the controls on Window are to be created"""
+		titleFont = wx.Font(14, wx.DEFAULT, wx.NORMAL, wx.BOLD)		
+		self.titleText = wx.StaticText(self, -1, "Print Job Details")
+		self.titleText.SetFont(titleFont)
+		self.userInputText = wx.StaticText(self, -1, "Please enter your myIIT ID*")
+		self.sizingPanelAfterUserInputText = wx.Panel(self, -1)
+		self.userInputTextCtrl = wx.TextCtrl(self, -1, "",  style=wx.TE_PROCESS_ENTER)
+		self.userInformationText = wx.StaticText(self, -1, "* This ID will be used at the release station to release your print job")
+		self.sizingPanelBeforeButtons = wx.Panel(self, -1)
+		self.printButton = wx.Button(self, -1, "Print")
+		self.cancelButton = wx.Button(self, -1, "Cancel")
 
+		self.__set_properties()
+		self.__do_layout()
 
+		self.Bind(wx.EVT_BUTTON, self.printCommand, self.printButton)
+		self.Bind(wx.EVT_BUTTON, self.cancelCommand, self.cancelButton)
+		self.Bind(wx.EVT_CLOSE,  self.cancelCommand) 
+		self.Bind(wx.EVT_TEXT_ENTER,  self.printCommand,  self.userInputTextCtrl)
 
+		if os.path.exists(configFilePath):
+			config = ConfigParser.SafeConfigParser({'cachedid':'None',  'currentid': 'None'})
+			config.read(configFilePath)
+			cachedId = config.get("pharos",  "cachedid")
+			if cachedId != 'None':
+				self.userInputTextCtrl.SetValue(cachedId)
+
+	def __set_properties(self):
+		"""Set the display properties of the frame"""
+		self.SetTitle("Remote Printing Popup")
+		self.SetSize((520, 250))
+
+	def __do_layout(self):
+		"""Perform the layout of items onto the frame"""
+		PopupFrameSizer = wx.BoxSizer(wx.VERTICAL)
+		buttonsBoxSizer = wx.BoxSizer(wx.HORIZONTAL)
+		userInputBoxSizer = wx.BoxSizer(wx.HORIZONTAL)
+		PopupFrameSizer.Add(self.titleText, 0, wx.EXPAND|wx.ALL|wx.ALIGN_CENTER_VERTICAL, 2)
+		userInputBoxSizer.Add(self.userInputText, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 0)
+		userInputBoxSizer.Add(self.sizingPanelAfterUserInputText, 1, wx.EXPAND, 0)
+		userInputBoxSizer.Add(self.userInputTextCtrl, 10, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 0)
+		PopupFrameSizer.Add(userInputBoxSizer, 1, wx.EXPAND, 0)
+		PopupFrameSizer.Add(self.userInformationText, 0, 0, 0)
+		buttonsBoxSizer.Add(self.sizingPanelBeforeButtons, 1, wx.EXPAND, 0)
+		buttonsBoxSizer.Add(self.printButton, 0, wx.ALIGN_CENTER_VERTICAL, 0)
+		buttonsBoxSizer.Add(self.cancelButton, 0, wx.ALIGN_CENTER_VERTICAL, 0)
+		PopupFrameSizer.Add(buttonsBoxSizer, 1, wx.EXPAND, 0)
+		self.SetSizer(PopupFrameSizer)
+		self.Layout()
+		self.Centre()           
+
+	def updateConfig(self,  userId):
+		config = ConfigParser.SafeConfigParser({'cachedid':'None',  'currentid': 'None'})
+		config.read(configFilePath)
+		cachedId = config.get("pharos",  "cachedid")             
+		config.set("pharos",  "currentid",  userId)
+		config.set("pharos",  "cachedid",  userId)
+		configfh = open(configFilePath,  'wb')
+		config.write(configfh)
+		configfh.close()
+		logger.info("Successfully updated config file with currentid = %s" %(userId))
+
+	def printCommand(self, event):
+		"""Handle the users choice of clicking the print button"""
+		inputLength = len(self.userInputTextCtrl.GetValue().strip())
+		if self.userInputTextCtrl.IsEmpty() or inputLength == 0:
+			logger.warn('User entered invalid input. Displaying warning message')
+			errorDialog = wx.MessageDialog(self, "User ID cannot be blank", "Input Error",  wx.OK | wx.ICON_ERROR)
+			errorDialog.ShowModal()
+			self.userInputTextCtrl.Clear()
+		else:                
+			# Write to config file
+			logger.info("Updating config file on user input %s" %(self.userInputTextCtrl.GetValue().strip()))
+			self.updateConfig(self.userInputTextCtrl.GetValue().strip())
+		self.Destroy()
+		event.Skip()
+
+	def cancelCommand(self, event):
+		"""Handle the users choice of clicking the cancel button"""
+		self.Destroy()            
+
+class wxRemotePrintingPopupApp(wx.App):
+	"""The wx.App for the wxRemotePrintingPopup application"""
+	def OnInit(self):
+		"""Override OnInit to create our Frame"""            
+		self.frame = wxPopupFrame(None, title="Remote Printing")            
+		self.frame.Show()
+		self.SetTopWindow(self.frame)            
+		return True
 
 
 # Function Declaration ===============================
+def getUserIDUsingWxWindow():
+	"""This function will initate a wx Window asking for user input"""
+	try:
+		app = wxRemotePrintingPopupApp()
+		app.MainLoop()        
+	except Exception,  e:
+		print 'Error Initializing GUI Input '
+
 def main():
 	"""
 	The main function of the script
 	"""
-	print 'Running %s' sys.argv[0]
+	# Initiate logger
 	
+	print 'Running ', sys.argv[0]
+	getUserIDUsingWxWindow()
+
 
 
 # Main Script ========================================
 if __name__ == "__main__":
 	main()
-
