@@ -48,14 +48,6 @@ import logging.config
 # Script Variables ===================================
 programConfigFilePath = os.path.join(os.getcwd(), 'pharos.conf')
 
-# Class Declaration ==================================
-
-
-
-
-
-
-
 # Function Declaration ===============================
 def main():
 	"""
@@ -79,7 +71,7 @@ def main():
 		config = ConfigParser.ConfigParser()
 		config.read(programConfigFilePath)
 		port = config.getint("popupserver", "port")
-		logger.info('Setting up the server port to %d' %port)
+		logger.info('Setting up the server connection port to %d' %port)
 	else:
 		port = 50000
 	
@@ -96,9 +88,16 @@ def main():
 	s.send('GetPrintJobParameters')
 	data = s.recv(1024)
 	s.close()
-	logger.info('Received response = ' %data)
-	sys.exit(0)
-	
+	logger.info('Received response = %s' %data)
+	# Split response
+	responseParts = data.split(',')
+	printjobparams = {}
+	for part in responseParts:
+		peices = part.split(':')
+		if len(peices) == 2:
+			printjobparams[peices[0].strip()] = peices[1].strip()
+	logger.info('Response dictionary = %s' %printjobparams)
+		
 	logger.info('User ID received = %s' %printjobparams["userid"])
 	logger.info('Print Command received = %s' %printjobparams["printjob"])
 	
@@ -142,8 +141,6 @@ def main():
 	logger.info("Running Command with arguments: " + "|".join(command))
 	returnCode = subprocess.call(command)
 	logger.info('Command return code = %d' %(returnCode))
-
-
 
 # Main Script ========================================
 try:

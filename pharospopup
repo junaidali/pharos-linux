@@ -87,10 +87,11 @@ class wxPopupFrame(wx.Frame):
 		# Delete old file if it exists
 		if os.path.exists(configFilePath):
 			os.remove(configFilePath)
-		config = ConfigParser.SafeConfigParser({'cachedid':'None',  'currentid': 'None'})
+		config = ConfigParser.SafeConfigParser({'cachedid':'None', 'printjob': 'no', 'currentid': 'None'})
 		config.add_section('pharos')
 		config.set("pharos",  "currentid", userId)
 		config.set("pharos",  "cachedid", userId)
+		config.set("pharos",  "printjob", 'yes')
 		with open(configFilePath,  'wb') as configFile:
 			config.write(configFile)		
 		logger.info("Successfully updated config file with currentid = %s" %(userId))
@@ -162,15 +163,14 @@ class PharosPopupServer:
 					self.logger.info('Pocessing %s' %data)
 					if data == 'GetPrintJobParameters':
 						self.logger.info('Trying to get print job parameters')
-						self.getPrintJobParameters()
-						
+						client.send(self.getPrintJobParameters())						
 					else:
 						self.logger.warn('Unknown command %s received' %data)
 						client.send('UNKNOWN')
 					client.close()
 		except socket.error, (value, message):
-			if s:
-				s.close()
+			if self.s:
+				self.s.close()
 			self.logger.error('Could not open socket. Error: %s' %message)
 			
 		
@@ -181,16 +181,21 @@ class PharosPopupServer:
 			app.MainLoop()        
 		except Exception,  e:
 			self.logger.warn('Error Initializing GUI Input ')
+		# Read the currentID from config file
+		if os.path.exists(configFilePath):
+			config = ConfigParser.SafeConfigParser({'cachedid':'None', 'printjob':'no', 'currentid': 'None'})
+			config.read(configFilePath)
+			cachedId = config.get("pharos", "cachedid")
+			printjob = config.get("pharos", "printjob")
+			if cachedId != 'None':
+				self.logger.info('Returning user ID = %s' %cachedId)
+				return "userid:" + cachedId + ",printjob:" + printjob
+		
+		self.logger.warn('Returning user ID = NONE')
+		return "userid: None,printjob: no"
 	
 
 # Function Declaration ===============================
-def getUserIDUsingWxWindow():
-	"""This function will initate a wx Window asking for user input"""
-	try:
-		app = wxRemotePrintingPopupApp()
-		app.MainLoop()        
-	except Exception,  e:
-		print 'Error Initializing GUI Input '
 
 def main():
 	"""
