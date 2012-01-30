@@ -14,11 +14,12 @@ import os
 import logging
 import logging.config
 import syslog
+import socket
+import subprocess
 
 # Script Variables ===================================
 configFilePath = os.path.join(os.getenv("HOME"),'.pharos')
-logFilePath = '/var/tmp/pharospopup.log'
-loggingConfigFilePath = os.path.join(os.getcwd(), 'pharos.conf')
+programConfigFilePath = os.path.join(os.getcwd(), 'pharos.conf')
 
 # Class Declaration ==================================
 class wxPopupFrame(wx.Frame):
@@ -133,7 +134,34 @@ class PharosPopupServer:
 		"""
 		self.logger = log
 		self.logger.info('Initializing Popup Server')
+		# Read the config
+		if os.path.exists(programConfigFilePath):
+			self.logger.info('calculating port information using %s' %configFilePath)
+			config = ConfigParser.ConfigParser()
+			config.read(programConfigFilePath)
+			self.port = config.getint("popupserver", "port")
+			self.logger.info('Setting up the listening port to %d' %self.port)
+		else:
+			self.port = 50000
+		self.host = ''
+		self.backlog = 5
+		self.size = 1024
 		
+	def run(self):
+		self.logger.info('Starting popup server: host %s, port %d, backlog: %d, size: %d ' %(self.host, self.port, self.backlog, self.size))
+		self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.s.bind((self.host,self.port))
+		self.s.listen(self.backlog)
+		while 1:
+			client, address = self.s.accept()
+			print 'Connection Received'
+			data = client.recv(size)
+			if data:
+				# Get the users input
+				self.logger.info('Pocessing %s' %data)
+
+
+	
 
 # Function Declaration ===============================
 def getUserIDUsingWxWindow():
@@ -150,16 +178,16 @@ def main():
 	"""	
 	logger.debug('Running %s' %sys.argv[0])
 	popupserver = PharosPopupServer(logger)
-	
+	popupserver.run() # Start listening
 	
 
 # Main Script ========================================
 # Initiate logger	
 try:
-	logging.config.fileConfig(loggingConfigFilePath)
+	logging.config.fileConfig(programConfigFilePath)
 	logger = logging.getLogger('pharospopup')	    
 except (TypeError, ConfigParser.NoSectionError):
-	syslog.syslog(syslog.LOG_ERR, '%s could not instantiate logging using config file %s. Exiting' %(sys.argv[0], loggingConfigFilePath))
+	syslog.syslog(syslog.LOG_ERR, '%s could not instantiate logging using config file %s. Exiting' %(sys.argv[0], programConfigFilePath))
 	sys.exit(1)
 
 if __name__ == "__main__":	
