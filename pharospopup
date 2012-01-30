@@ -14,6 +14,10 @@ import os
 import logging
 import logging.config
 import syslog
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+import gobject
 
 # Script Variables ===================================
 configFilePath = os.path.join(os.getenv("HOME"),'.pharos')
@@ -82,18 +86,42 @@ class wxPopupFrame(wx.Frame):
 		self.Layout()
 		self.Centre()           
 
-	def updateConfig(self,  userId):
+	def updateConfigAndPrint(self,  userId):
 		# Delete old file if it exists
 		if os.path.exists(configFilePath):
 			os.remove(configFilePath)
-		config = ConfigParser.SafeConfigParser({'cachedid':'None',  'currentid': 'None'})
+		config = ConfigParser.SafeConfigParser({'cachedid':'None',  'printjob':"no", 'currentid': 'None'})
 		config.add_section('pharos')
-		config.set("pharos",  "currentid", userId)
-		config.set("pharos",  "cachedid", userId)
+		config.set("pharos", "currentid", userId)
+		config.set("pharos", "cachedid", userId)
+		config.set("pharos", "printjob", "yes")
 		with open(configFilePath,  'wb') as configFile:
 			config.write(configFile)		
-		logger.info("Successfully updated config file with currentid = %s" %(userId))
+		logger.info('successfully updated config with currentid: %s, cachedid: %s and printjob: %s' %(userId, userId, "yes"))
 
+	def updateConfigWithCancelPrint(self):
+		"""
+		Updates the config and sets print current job to no
+		"""
+		currentID = 'None'
+		cachedID = 'None'
+		if os.path.exists(configFilePath):
+			config = ConfigParser.SafeConfigParser()
+			config.readfp(open(configFilePath))
+			currentID = config.get("pharos", "currentid")
+			cachedID = config.get("pharos", "cachedid")
+				
+		# Update config parser
+		config = ConfigParser.SafeConfigParser({'cachedid':'None',  'printjob':"no", 'currentid': 'None'})
+		config.add_section('pharos')
+		config.set("pharos", "currentid", currentID)
+		config.set("pharos", "cachedid", cachedID)
+		config.set("pharos", "printjob", "no")
+		with open(configFilePath,  'wb') as configFile:
+			config.write(configFile)
+		logger.info('successfully updated config with currentid: %s, cachedid: %s and printjob: %s' %(currentID, cachedID, "no"))		
+		
+		
 	def printCommand(self, event):
 		"""Handle the users choice of clicking the print button"""
 		inputLength = len(self.userInputTextCtrl.GetValue().strip())
@@ -105,13 +133,14 @@ class wxPopupFrame(wx.Frame):
 		else:                
 			# Write to config file
 			logger.info("Updating config file on user input %s" %(self.userInputTextCtrl.GetValue().strip()))
-			self.updateConfig(self.userInputTextCtrl.GetValue().strip())
+			self.updateConfigAndPrint(self.userInputTextCtrl.GetValue().strip())
 			self.Destroy()
 			event.Skip()
 
 	def cancelCommand(self, event):
 		"""Handle the users choice of clicking the cancel button"""
 		logger.warn('User chose to cancel the print job')
+		self.updateConfigWithCancelPrint()
 		self.Destroy()            
 
 class wxRemotePrintingPopupApp(wx.App):
@@ -123,34 +152,57 @@ class wxRemotePrintingPopupApp(wx.App):
 		self.SetTopWindow(self.frame)            
 		return True
 
-class PharosPopupServer:
+class PharosPopupObject(dbus.service.Object):
 	"""
 	This is a popup server which prompts the user for input when it receives message from CUPS daemon
-	"""
-	def __init__(self, log):
+	"""	
+	
+	def setLogger(self, log):
 		"""
 		Construtor
 		"""
 		self.logger = log
-		self.logger.info('Initializing Popup Server')
+		self.logger.info('Initializing Pharos Popup Object')
+	
+	@dbus.service.method("org.pharos.PopupServer", in_signature='', out_signature='a{ss}')
+	def GetPrintJobParameters(self):
+		"""
+		Returns the User ID using GUI or config file.		
+		"""
+		self.logger.info('Trying to get user id using GUI')
+		try:
+			app = wxRemotePrintingPopupApp()
+			app.MainLoop()        
+		except Exception,  e:
+			self.logger.warn('Error Initializing GUI Input ')
+		# Read the currentID from config file
+		if os.path.exists(configFilePath):
+			config = ConfigParser.SafeConfigParser({'cachedid':'None',  'currentid': 'None'})
+			config.read(configFilePath)
+			cachedId = config.get("pharos",  "cachedid")
+			printjob = config.get("pharos", "printjob")
+			if cachedId != 'None':
+				self.logger.info('Returning user ID = %s' %cachedId)
+				return {"userid": cachedId, "printjob": printjob}
 		
-
+		self.logger.warn('Returning user ID = NONE')
+		return {"userid": "None", "printjob": "no"}
+		
 # Function Declaration ===============================
-def getUserIDUsingWxWindow():
-	"""This function will initate a wx Window asking for user input"""
-	try:
-		app = wxRemotePrintingPopupApp()
-		app.MainLoop()        
-	except Exception,  e:
-		print 'Error Initializing GUI Input '
-
 def main():
 	"""
 	The main function of the script
 	"""	
 	logger.debug('Running %s' %sys.argv[0])
-	popupserver = PharosPopupServer(logger)
+	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 	
+	session_bus = dbus.SessionBus()
+	name = dbus.service.BusName("org.pharos.PopupServer", session_bus)
+	object = PharosPopupObject(session_bus, '/PopupObject')
+	object.setLogger(logger)
+	mainloop = gobject.MainLoop()
+	logger.debug('Running Service ')
+	mainloop.run()
 	
 
 # Main Script ========================================

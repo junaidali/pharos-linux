@@ -37,8 +37,14 @@ __doc__ = 'CUPS backend for popup based printing to Pharos LPD server'
 
 # Imports ============================================
 import sys
+import dbus
+import logging
+import logging.config
+from traceback import print_exc
+import os
 
-
+# Script Variables ===================================
+loggingConfigFilePath = os.path.join(os.getcwd(), 'pharos.conf')
 
 # Class Declaration ==================================
 
@@ -54,8 +60,23 @@ def main():
 	The main function of the script
 	"""
 	print 'Running %s' %sys.argv[0]
-
+	bus = dbus.SessionBus()
+	try:
+		remote_object = bus.get_object("org.pharos.PopupServer", "/PopupObject")
+		printjobparams = remote_object.GetPrintJobParameters()		
+	except dbus.DBusException:
+		logger.warn('Error connecting to popup server')
+		logger.warn(print_exc())
+		sys.exit(1)
+	logger.info('User ID received = %s' %printjobparams["userid"])
+	logger.info('Print Command received = %s' %printjobparams["printjob"])
 
 # Main Script ========================================
+try:
+	logging.config.fileConfig(loggingConfigFilePath)
+	logger = logging.getLogger('pharos')	    
+except (TypeError, ConfigParser.NoSectionError):
+	syslog.syslog(syslog.LOG_ERR, '%s could not instantiate logging using config file %s. Exiting' %(sys.argv[0], loggingConfigFilePath))
+	sys.exit(1)
 if __name__ == "__main__":
 	main()
