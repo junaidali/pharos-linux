@@ -42,6 +42,7 @@ import logging
 import logging.config
 from traceback import print_exc
 import os
+import ConfigParser
 
 # Script Variables ===================================
 loggingConfigFilePath = os.path.join(os.getcwd(), 'pharos.conf')
@@ -59,7 +60,18 @@ def main():
 	"""
 	The main function of the script
 	"""
-	print 'Running %s' %sys.argv[0]
+	if len(sys.argv) == 1:
+		# Without arguments display backend info
+		sys.stdout.write("network %s \"Unknown\" \"%s\" \n" %(os.path.basename(sys.argv[0]),  __doc__))
+		sys.stdout.flush()
+		sys.exit(0)
+	if len(sys.argv) not in (5,6):
+		sys.stdout.write("Usage: %s job-id user title copies options [file]\n" % os.path.basename(sys.argv[0]))
+		sys.stdout.flush()
+		logger.error("Wrong number of arguments (%d). Usage %s job-id user" %(len(sys.argv[0]),  sys.argv[0]))
+		sys.exit(1)
+	
+	# Try to get print job parameters from user
 	bus = dbus.SessionBus()
 	try:
 		remote_object = bus.get_object("org.pharos.PopupServer", "/PopupObject")
@@ -70,6 +82,47 @@ def main():
 		sys.exit(1)
 	logger.info('User ID received = %s' %printjobparams["userid"])
 	logger.info('Print Command received = %s' %printjobparams["printjob"])
+	
+	# check if continue printing
+	if printjobparams["printjob"] == "yes":
+		logger.info("Printing Job")
+	else:
+		logger.info("User chose to cancel job. Exiting")
+		sys.exit(0)
+	
+	logger.info('Processing DEVICE_URI')
+	deviceURI = os.environ['DEVICE_URI']	
+	devParts = deviceURI.split(':')[1].split('/')
+	deviceURI = 'lpd://' + devParts[len(devParts)-2] + '/' + devParts[len(devParts)-1]
+	logger.info('lpd print queue uri = %s' % deviceURI )
+	os.environ['DEVICE_URI'] = deviceURI
+	logger.info('Set DEVICE_URI to %s' % os.environ['DEVICE_URI'])
+
+	# Check input arguments
+	jobID = sys.argv[1]
+	userName = sys.argv[2]
+	jobTitle = sys.argv[3]
+	copies = sys.argv[4]
+	printOptions = sys.argv[5]
+	if len(sys.argv) > 6:
+		logger.info('using printFile %s' %sys.argv[6])
+		printFile = sys.argv[6]
+	else:
+		# Create print file from STDIN
+		ogger.info('printFile argument not supplied, will create it using STDIN')
+		printFileTuple = tempfile.mkstemp()
+		printFile = printFileTuple[1]
+		printFileHndl = open(printFile,  'wb')
+		for line in sys.stdin:
+			printFileHndl.writelines(line)
+		printFileHndl.close()
+
+	logger.info('Job Arguments (Job ID: %s, User Name: %s, Job Title: %s, Copies: %s, Print Options: %s, Print File: %s)' %(jobID,  userName,  jobTitle,  copies,  printOptions,  printFile))
+
+	command = [os.path.join(cupsBackendDIR, 'lpd'), jobID,  userId,  jobTitle,  copies,  printOptions,  printFile]
+	logger.info("Running Command with arguments: " + "|".join(command))
+	returnCode = subprocess.call(command)
+	logger.info('Command return code = %d' %(returnCode))
 
 # Main Script ========================================
 try:
