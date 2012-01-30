@@ -149,18 +149,38 @@ class PharosPopupServer:
 		
 	def run(self):
 		self.logger.info('Starting popup server: host %s, port %d, backlog: %d, size: %d ' %(self.host, self.port, self.backlog, self.size))
-		self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.s.bind((self.host,self.port))
-		self.s.listen(self.backlog)
-		while 1:
-			client, address = self.s.accept()
-			print 'Connection Received'
-			data = client.recv(size)
-			if data:
-				# Get the users input
-				self.logger.info('Pocessing %s' %data)
-
-
+		try:			
+			self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			self.s.bind((self.host,self.port))
+			self.s.listen(self.backlog)
+			while 1:
+				client, address = self.s.accept()
+				print 'Connection Received'
+				data = client.recv(self.size)
+				if data:
+					# Get the users input
+					self.logger.info('Pocessing %s' %data)
+					if data == 'GetPrintJobParameters':
+						self.logger.info('Trying to get print job parameters')
+						self.getPrintJobParameters()
+						
+					else:
+						self.logger.warn('Unknown command %s received' %data)
+						client.send('UNKNOWN')
+					client.close()
+		except socket.error, (value, message):
+			if s:
+				s.close()
+			self.logger.error('Could not open socket. Error: %s' %message)
+			
+		
+	def getPrintJobParameters(self):
+		# Run the GUI
+		try:
+			app = wxRemotePrintingPopupApp()
+			app.MainLoop()        
+		except Exception,  e:
+			self.logger.warn('Error Initializing GUI Input ')
 	
 
 # Function Declaration ===============================

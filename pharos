@@ -37,8 +37,16 @@ __doc__ = 'CUPS backend for popup based printing to Pharos LPD server'
 
 # Imports ============================================
 import sys
+import os
+import socket
+import ConfigParser
+import os
+import logging
+import logging.config
 
 
+# Script Variables ===================================
+programConfigFilePath = os.path.join(os.getcwd(), 'pharos.conf')
 
 # Class Declaration ==================================
 
@@ -53,9 +61,96 @@ def main():
 	"""
 	The main function of the script
 	"""
-	print 'Running %s' %sys.argv[0]
+	if len(sys.argv) == 1:
+		# Without arguments display backend info
+		sys.stdout.write("network %s \"Unknown\" \"%s\" \n" %(os.path.basename(sys.argv[0]),  __doc__))
+		sys.stdout.flush()
+		sys.exit(0)
+	if len(sys.argv) not in (5,6):
+		sys.stdout.write("Usage: %s job-id user title copies options [file]\n" % os.path.basename(sys.argv[0]))
+		sys.stdout.flush()
+		logger.error("Wrong number of arguments (%d). Usage %s job-id user" %(len(sys.argv[0]),  sys.argv[0]))
+		sys.exit(1)
+	
+	# Try to get print job parameters from user
+	host = ''
+	if os.path.exists(programConfigFilePath):
+		logger.info('calculating port information using %s' %programConfigFilePath)
+		config = ConfigParser.ConfigParser()
+		config.read(programConfigFilePath)
+		port = config.getint("popupserver", "port")
+		logger.info('Setting up the server port to %d' %port)
+	else:
+		port = 50000
+	
+	logger.info('Trying to connect to host %s on port %d' %(host, port))
+	try:
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.connect((host, port))
+	except socket.error, (value, message):
+		if s:
+			s.close()
+		logger.error('Could not connect to popup server. Error %s' %message)
+		sys.exit(1)
+		
+	s.send('GetPrintJobParameters')
+	data = s.recv(1024)
+	s.close()
+	logger.info('Received response = ' %data)
+	sys.exit(0)
+	
+	logger.info('User ID received = %s' %printjobparams["userid"])
+	logger.info('Print Command received = %s' %printjobparams["printjob"])
+	
+	# check if continue printing
+	if printjobparams["printjob"] == "yes":
+		logger.info("Printing Job")
+	else:
+		logger.info("User chose to cancel job. Exiting")
+		sys.exit(0)
+	
+	logger.info('Processing DEVICE_URI')
+	deviceURI = os.environ['DEVICE_URI']	
+	devParts = deviceURI.split(':')[1].split('/')
+	deviceURI = 'lpd://' + devParts[len(devParts)-2] + '/' + devParts[len(devParts)-1]
+	logger.info('lpd print queue uri = %s' % deviceURI )
+	os.environ['DEVICE_URI'] = deviceURI
+	logger.info('Set DEVICE_URI to %s' % os.environ['DEVICE_URI'])
+
+	# Check input arguments
+	jobID = sys.argv[1]
+	userName = sys.argv[2]
+	jobTitle = sys.argv[3]
+	copies = sys.argv[4]
+	printOptions = sys.argv[5]
+	if len(sys.argv) > 6:
+		logger.info('using printFile %s' %sys.argv[6])
+		printFile = sys.argv[6]
+	else:
+		# Create print file from STDIN
+		ogger.info('printFile argument not supplied, will create it using STDIN')
+		printFileTuple = tempfile.mkstemp()
+		printFile = printFileTuple[1]
+		printFileHndl = open(printFile,  'wb')
+		for line in sys.stdin:
+			printFileHndl.writelines(line)
+		printFileHndl.close()
+
+	logger.info('Job Arguments (Job ID: %s, User Name: %s, Job Title: %s, Copies: %s, Print Options: %s, Print File: %s)' %(jobID,  userName,  jobTitle,  copies,  printOptions,  printFile))
+
+	command = [os.path.join(cupsBackendDIR, 'lpd'), jobID,  userId,  jobTitle,  copies,  printOptions,  printFile]
+	logger.info("Running Command with arguments: " + "|".join(command))
+	returnCode = subprocess.call(command)
+	logger.info('Command return code = %d' %(returnCode))
+
 
 
 # Main Script ========================================
+try:
+	logging.config.fileConfig(programConfigFilePath)
+	logger = logging.getLogger('pharospopup')	    
+except (TypeError, ConfigParser.NoSectionError):
+	syslog.syslog(syslog.LOG_ERR, '%s could not instantiate logging using config file %s. Exiting' %(sys.argv[0], programConfigFilePath))
+	sys.exit(1)
 if __name__ == "__main__":
 	main()
