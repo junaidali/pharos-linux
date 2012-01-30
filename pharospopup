@@ -123,6 +123,17 @@ class wxRemotePrintingPopupApp(wx.App):
 		self.SetTopWindow(self.frame)            
 		return True
 
+class PharosPopupServer:
+	"""
+	This is a popup server which prompts the user for input when it receives message from CUPS daemon
+	"""
+	def __init__(self, log):
+		"""
+		Construtor
+		"""
+		self.logger = log
+		self.logger.info('Initializing Popup Server')
+		
 
 # Function Declaration ===============================
 def getUserIDUsingWxWindow():
@@ -137,8 +148,10 @@ def main():
 	"""
 	The main function of the script
 	"""	
-	logger.debug('Running ', sys.argv[0])
-	getUserIDUsingWxWindow()
+	logger.debug('Running %s' %sys.argv[0])
+	popupserver = PharosPopupServer(logger)
+	
+	
 
 # Main Script ========================================
 # Initiate logger	
