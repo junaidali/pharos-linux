@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Script Name: pharospopup
+# Script Name: pharos
 # Script Function:
 #	This is a CUPS backend for the Pharos Remote Printing LPD Server.
 # Save this file in your CUPS backend directory, usually
@@ -25,8 +25,6 @@
 # pharos://printserver.university.edu/HP_LaserJet
 # 
 #	This will print to a Pharos Uniprint Print server with DNS name printserver.university.edu and print queue HP_LaserJet
-#
-#
 #
 # Author: Junaid Ali
 # Version: 1.0
