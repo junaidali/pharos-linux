@@ -143,6 +143,11 @@ def main():
 	logger.info("Running Command with arguments: " + "|".join(command))
 	returnCode = subprocess.call(command)
 	logger.info('Command return code = %d' %(returnCode))
+	
+	# Delete the temp file used
+	if os.path.exists(printFile):
+		os.remove(printFile)
+		logger.info('Successfully removed print file: %s' %(printFile))
 
 # Main Script ========================================
 try:
