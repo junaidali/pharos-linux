@@ -43,10 +43,12 @@ import ConfigParser
 import os
 import logging
 import logging.config
-
+import tempfile
+import subprocess
 
 # Script Variables ===================================
-programConfigFilePath = os.path.join(os.getcwd(), 'pharos.conf')
+programConfigFilePath = '/etc/pharos.conf'
+cupsBackendDIR = '/usr/lib/cups/backend'
 
 # Function Declaration ===============================
 def main():
@@ -127,7 +129,7 @@ def main():
 		printFile = sys.argv[6]
 	else:
 		# Create print file from STDIN
-		ogger.info('printFile argument not supplied, will create it using STDIN')
+		logger.info('printFile argument not supplied, will create it using STDIN')
 		printFileTuple = tempfile.mkstemp()
 		printFile = printFileTuple[1]
 		printFileHndl = open(printFile,  'wb')
@@ -137,7 +139,7 @@ def main():
 
 	logger.info('Job Arguments (Job ID: %s, User Name: %s, Job Title: %s, Copies: %s, Print Options: %s, Print File: %s)' %(jobID,  userName,  jobTitle,  copies,  printOptions,  printFile))
 
-	command = [os.path.join(cupsBackendDIR, 'lpd'), jobID,  userId,  jobTitle,  copies,  printOptions,  printFile]
+	command = [os.path.join(cupsBackendDIR, 'lpd'), jobID,  printjobparams["userid"],  jobTitle,  copies,  printOptions,  printFile]
 	logger.info("Running Command with arguments: " + "|".join(command))
 	returnCode = subprocess.call(command)
 	logger.info('Command return code = %d' %(returnCode))
@@ -145,7 +147,7 @@ def main():
 # Main Script ========================================
 try:
 	logging.config.fileConfig(programConfigFilePath)
-	logger = logging.getLogger('pharospopup')	    
+	logger = logging.getLogger('pharos')	    
 except (TypeError, ConfigParser.NoSectionError):
 	syslog.syslog(syslog.LOG_ERR, '%s could not instantiate logging using config file %s. Exiting' %(sys.argv[0], programConfigFilePath))
 	sys.exit(1)

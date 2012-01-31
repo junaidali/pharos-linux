@@ -19,7 +19,7 @@ import subprocess
 
 # Script Variables ===================================
 configFilePath = os.path.join(os.getenv("HOME"),'.pharos')
-programConfigFilePath = os.path.join(os.getcwd(), 'pharos.conf')
+programConfigFilePath = '/etc/pharos.conf'
 
 # Class Declaration ==================================
 class wxPopupFrame(wx.Frame):
@@ -96,6 +96,7 @@ class wxPopupFrame(wx.Frame):
 			config.write(configFile)		
 		logger.info("Successfully updated config file with currentid = %s" %(userId))
 
+
 	def printCommand(self, event):
 		"""Handle the users choice of clicking the print button"""
 		inputLength = len(self.userInputTextCtrl.GetValue().strip())
@@ -114,7 +115,25 @@ class wxPopupFrame(wx.Frame):
 	def cancelCommand(self, event):
 		"""Handle the users choice of clicking the cancel button"""
 		logger.warn('User chose to cancel the print job')
-		self.Destroy()            
+		currentID = 'None'
+		cachedID = 'None'
+		if os.path.exists(configFilePath):
+			config = ConfigParser.SafeConfigParser()
+			config.readfp(open(configFilePath))
+			currentID = config.get("pharos", "currentid")
+			cachedID = config.get("pharos", "cachedid")
+				
+		# Update config parser
+		config = ConfigParser.SafeConfigParser({'cachedid':'None',  'printjob':"no", 'currentid': 'None'})
+		config.add_section('pharos')
+		config.set("pharos", "currentid", currentID)
+		config.set("pharos", "cachedid", cachedID)
+		config.set("pharos", "printjob", "no")
+		with open(configFilePath,  'wb') as configFile:
+			config.write(configFile)
+		logger.info('successfully updated config with currentid: %s, cachedid: %s and printjob: %s' %(currentID, cachedID, "no"))
+		
+		self.Destroy()
 
 class wxRemotePrintingPopupApp(wx.App):
 	"""The wx.App for the wxRemotePrintingPopup application"""
