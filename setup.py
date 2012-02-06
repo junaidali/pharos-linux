@@ -260,6 +260,12 @@ def installPrintQueues():
 	"""
 	logger.info('Installing print queues')
 	
+def setupLoggingDirectories():
+	"""
+	Setup the permissions for log folders
+	""""
+	logger.info('Creating log directories')
+	
 def main():
 	"""
 	The main installer script
@@ -280,6 +286,9 @@ def main():
 	
 	# Setup Print Queues
 	installPrintQueues()
+	
+	# Setup Log Directories
+	setupLoggingDirectories()
 	
 	
 
