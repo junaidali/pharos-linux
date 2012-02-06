@@ -4,7 +4,9 @@
 #	This script will install pharos remote printing on the system.
 #	The following tasks will be performed:
 #	1. Install the pharos backend to cups backend directory
-#	2. Install the popup scripts to /etc/pharos
+#	2. Install the popup scripts to /usr/local/bin/pharospopup
+#	3. Install the config file to /usr/local/etc/
+#	4. Install the uninstall script to /usr/local/bin/uninstall-pharos
 #	3. Setup the users desktop environment to autorun the pharospoup at login
 #	4. Create the print queues as defined in printers.conf
 #	
@@ -116,6 +118,8 @@ def main():
 	
 	# Install backend
 	installBackend()
+	
+	# Install 
 	
 
 # Main Script ============================
