@@ -45,7 +45,7 @@ import tempfile
 import subprocess
 
 # Script Variables ===================================
-programConfigFilePath = '/etc/pharos.conf'
+programConfigFilePath = '/usr/local/etc/pharos.conf'
 cupsBackendDIR = '/usr/lib/cups/backend'
 
 # Function Declaration ===============================

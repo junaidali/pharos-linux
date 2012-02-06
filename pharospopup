@@ -19,7 +19,7 @@ import subprocess
 
 # Script Variables ===================================
 configFilePath = os.path.join(os.getenv("HOME"),'.pharos')
-programConfigFilePath = '/etc/pharos.conf'
+programConfigFilePath = '/usr/local/etc/pharos.conf'
 
 # Class Declaration ==================================
 class wxPopupFrame(wx.Frame):
