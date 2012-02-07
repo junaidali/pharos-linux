@@ -1,3 +1,4 @@
 *~
 printers.conf
 *.log
+*.pyc
