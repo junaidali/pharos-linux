@@ -35,6 +35,7 @@ def uninstallPharosPrinters():
 	Uninstall Pharos Printers
 	"""
 	logger.info('Uninstalling all pharos printers')
+	printerUtility.getAllPrintersByBackend(backend='pharos')
 	
 	
 def uninstallBackend():
@@ -92,5 +93,13 @@ ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 
+# import the uninstall-pharos file
+sys.path.append(os.getcwd())
+try:	
+	from printerutils import PrinterUtility
+except:
+	logger.error('Cannot import module pharosuninstall or printerutil')
+
+printerUtility = PrinterUtility(logger)
 if __name__ == "__main__":
 	uninstall()

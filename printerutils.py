@@ -178,3 +178,11 @@ class PrinterUtility:
 		else:
 			self.logger.error('Could not find the required driver installed on the system. Cannot install printer')
 			return False		
+
+	def getAllPrintersByBackend(self, backend=None):
+		"""
+		returns all printers by queue backend
+		e.g. lpd, usb, socket, etc.
+		"""
+		self.logger.info('Getting list of all printers by queue backend type')
+		
