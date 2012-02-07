@@ -1,7 +1,17 @@
+#!/usr/bin/python
+# Script Name: printerutils.py
+# Script Function:
+#	This script provides utility functions for dealing with print queues
+#
+# Author: Junaid Ali
+# Version: 1.0
+
+# Imports ===============================
 
 import subprocess
 import re
 
+# Class definitions =====================
 class PrinterUtility:
 	def __init__(self, log):
 		self.logger = log
@@ -72,7 +82,6 @@ class PrinterUtility:
 			return False
 		
 		return True
-	
 	
 	def installPrintQueue(self, printer):
 		"""
