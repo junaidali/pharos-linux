@@ -34,6 +34,7 @@ printersConfigFile = os.path.join(os.getcwd(), 'printers.conf')
 
 popupServerInstallDIR = '/usr/local/bin'
 pharosConfigInstallDIR = '/usr/local/etc'
+pharosLogDIR = '/var/log/pharos'
 
 # Regular Expressions
 gnomeWindowManagerRegularExpression = 'gnome|unity'
@@ -263,8 +264,34 @@ def installPrintQueues():
 def setupLoggingDirectories():
 	"""
 	Setup the permissions for log folders
-	""""
+	"""
 	logger.info('Creating log directories')
+	
+	# Delete old directories if they exist
+	if os.path.exists(pharosLogDIR):
+		logger.info('Old log directory %s found.' %pharosLogDIR)
+		logger.info('Now trying to delete %s' %pharosLogDIR)
+		try:			
+			shutil.rmtree(pharosLogDIR)
+			logger.info('Successfully removed old log directory %s' %pharosLogDIR)
+		except OSError as (errCode, errMessage):
+			logger.error('Error removing old log directory %s' %pharosLogDIR)
+			logger.error('Error Code: %s, Error Message: %s' %(errCode, errMessage))
+		
+	if not os.path.exists(pharosLogDIR):
+		logger.info('Creating autostart directory %s' %pharosLogDIR)
+		os.makedirs(pharosLogDIR)			
+	else:
+		logger.info('Autostart directory %s already exists' %pharosLogDIR)
+	
+	# Setup permissions for all users
+	logger.info('Changing permission for directory %s' %pharosLogDIR)
+	try:
+		chmod = subprocess.check_output(['chmod', '777', pharosLogDIR])
+		logger.info('Successfully updated permissions for %s' %pharosLogDIR)
+	except CalledProcessError as (errCode, errMessage):
+		logger.error('Could not set permissions for %s' %pharosLogDIR)	
+		logger.error('Error: %s Message: %s' %(errCode, errMessage))
 	
 def main():
 	"""
