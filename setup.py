@@ -24,6 +24,7 @@ import logging
 import subprocess
 import re
 import shutil
+import ConfigParser
 
 # Script Variables ======================
 logFile = os.path.join(os.getcwd(), 'pharos-linux.log')
@@ -35,6 +36,7 @@ printersConfigFile = os.path.join(os.getcwd(), 'printers.conf')
 popupServerInstallDIR = '/usr/local/bin'
 pharosConfigInstallDIR = '/usr/local/etc'
 pharosLogDIR = '/var/log/pharos'
+programLogFiles = ['pharos.log', 'pharospopup.log']
 
 # Regular Expressions
 gnomeWindowManagerRegularExpression = 'gnome|unity'
@@ -255,11 +257,198 @@ def addPopupServerToLogin():
 		logger.warn('Users window manager is not recognized. Could not setup login scripts for popupserver. Please use your window manager to add startup script %s' %os.path.join(os.getcwd(),pharosPopupServerFileName))
 	logger.info('Completed adding pharos popup server to login')
 
-def installPrintQueues():
+def printerExists(printer):
+	"""
+	Checks if the given printer device exists
+	"""
+	logger.info('Checking if printer %s exists' %printer)
+	printerExistsCommand = ['lpoptions', '-d', printer]
+	
+	logger.info('Checking if printer %s already exists using command %s' %(printer, printerExistsCommand))
+	try:
+		printerExistsCommandResult = subprocess.check_output(printerExistsCommand,stderr=subprocess.STDOUT)
+		logger.info('Result of printer delete command %s' %printerExistsCommandResult)
+		if re.search('Unknown printer or class', printerExistsCommandResult):
+			logger.info('Printer %s does not exists' %printer)
+			return False
+		else:
+			logger.info('Printer %s already exists' %printer)
+			return True
+	except subprocess.CalledProcessError:
+		logger.warn('Could not check if printer exists using lpoptions command')		
+		
+	return False
+	
+	
+def deletePrinter(printer):
+	"""
+	Deletes the given printer device
+	"""
+	logger.info('Trying to delete printer device %s' %printer)
+	deletePrinterCommand = ['lpadmin', '-x', printer]
+	logger.info('Trying to delete printer %s using command %s' %(printer, deletePrinterCommand))
+	try:
+		deletePrinterCommandResult = subprocess.call(deletePrinterCommand)		
+	except subprocess.CalledProcessError:
+		logger.error('Could not delete printer %s using lpadmin command' %printer)	 	
+		return False
+	
+	# check if printer still exists
+	if not printerExists(printer):
+		return True
+	else:
+		return False		
+	
+def enablePrinter(printer):
+	"""
+	Enables printer device
+	"""
+	
+	acceptPrinterCommand = ['cupsaccept', printer]
+	logger.info('Trying to enable printer %s using command %s' %(printer, acceptPrinterCommand))
+	try:
+		acceptPrintCommandResult = subprocess.call(acceptPrinterCommand)
+		logger.info('Result = %s' %acceptPrintCommandResult)
+	except subprocess.CalledProcessError:
+		logger.error('Could not accept printer %s using cupsaccept command' %printer)	 	
+		return False
+	
+	enablePrinterCommand = ['cupsenable', printer]
+	logger.info('Trying to enable printer %s using command %s' %(printer, enablePrinterCommand))
+	try:
+		enablePrintCommandResult = subprocess.call(enablePrinterCommand)
+		logger.info('Result = %s' %enablePrintCommandResult)
+	except subprocess.CalledProcessError:
+		logger.error('Could not enable printer %s using cupsenable command' %printer)	 	
+		return False
+	
+	return True
+	
+	
+def installPrintQueue(printer):
+	"""
+	Install a print queue	
+	"""
+	logger.info('Installing printer %s' %printer)
+	
+	# check if all required parameters are present
+	if printer['driver'] == None or printer['model'] == None or printer['lpdserver'] == None or  printer['lpdqueue'] == None:
+		logger.error('One of the required parameters (driver, model, lpdserver, lpdqueue) is missing. Cannot add printer')
+		return False		
+	
+	# Check if driver is specified
+	if printer['driver'] != None:
+		logger.info('Printer driver <%s> is defined' %printer['driver'])
+		logger.info('Fixing Printer driver name')
+		if re.search('\(|\)', printer['driver']):
+			logger.info('Printer Driver name <%s> contains brackets' %printer['driver'])
+			printer['driver'] = re.sub('\(', '\(', printer['driver'])
+			printer['driver'] = re.sub('\)', '\)', printer['driver'])
+			logger.info('Printer driver after fixing brackets: %s' %printer['driver'])
+	
+	# Query for driver using make and model
+	printerDriverPath = ''
+	driverFound = False		
+	if printer['model'] != None:
+		logger.info('Printer model <%s> is defined. Now searching for driver' %printer['model'])
+		try:
+			lpinfo = subprocess.check_output(['lpinfo', '--make-and-model',printer['model'], '-m'])			
+		except subprocess.CalledProcessError:
+			logger.error('Could not get printer driver details using lpinfo')		
+			return False			
+		# Process results of lpinfo
+		driversList = lpinfo.split('\n')
+		logger.info('Total %d drivers returned for <%s> make and model' %(len(driversList), printer['model']))		
+		for driver in driversList:
+			driverPath = driver.split(' ')[0]
+			driverName = driver.lstrip(driverPath)
+			# remove white spaces if any
+			driverPath = driverPath.strip()
+			driverName = driverName.strip()
+			if driverName != '':
+				logger.info('checking if driver <%s> matches <%s>' %(driverName, printer['driver']))
+				if re.search(printer['driver'], driverName):
+					logger.info('Driver matches')
+					driverFound = True
+					printerDriverPath = driverPath
+					break
+				else:
+					logger.warn('Driver does not match')
+	
+	if driverFound:
+		# Check if printer already exists.
+		if printerExists(printer['printqueue']):
+			if deletePrinter(printer['printqueue']):
+				logger.info('Printer %s successfully deleted' %printer['printqueue'])
+			else:
+				logger.error('Printer %s could not be deleted' %printer['printqueue'])
+				logger.error('Will not try to add the printer again')
+				return False
+				
+		logger.info('Using driver path %s' %printerDriverPath)
+		# Build lpadmin Command
+		deviceURI = 'pharos://' + printer['lpdserver'] + '/' + printer['lpdqueue']
+		lpadminCommand = ['lpadmin', '-E', '-p', printer['printqueue'] , '-v', deviceURI, '-m', printerDriverPath]
+		if printer['location'] != None:
+			lpadminCommand.append('-L')
+			lpadminCommand.append(printer['location'])
+		if printer['description'] != None:
+			lpadminCommand.append('-D')
+			lpadminCommand.append(printer['description'])			
+		
+		# Run lpadmin command
+		try:
+			logger.info('Adding printer using lpadmin command: %s' %lpadminCommand)
+			lpadmin = subprocess.check_output(lpadminCommand)
+			logger.info('command result = %s' %lpadmin)
+		except subprocess.CalledProcessError:
+			logger.error('Could not add printer using lpadmin')
+		
+		# Enable Printer
+		if enablePrinter(printer['printqueue']):
+			logger.info('Successfully enabled printer %s' %printer['printqueue'])
+		else:
+			logger.warn('Could not enable printer %s' %printer['printqueue'])		
+		
+		if printerExists(printer['printqueue']):
+			logger.info('Successfully created printer %s' %printer['printqueue'])
+			return True
+		else:
+			logger.error('Could not create printer %s' %printer['printqueue'])
+			return False		
+		
+	else:
+		logger.error('Could not find the required driver installed on the system. Cannot install printer')
+		return False		
+	
+def installPrintQueuesUsingConfigFile():
 	"""
 	Installs print queues based on the printers.conf file
 	"""
-	logger.info('Installing print queues')
+	logger.info('Installing print queues using config file %s' %printersConfigFile)
+	config = ConfigParser.RawConfigParser()
+	config.read(printersConfigFile)
+	printersList = config.get('Printers','printers')
+	logger.info('Printers list = %s' %printersList)
+	printers = printersList.split(',')
+	logger.info('Need to install total %d printers' %len(printers))
+	for printer in printers:
+		printer = printer.strip()
+		logger.info('Installing printer %s' %printer)
+		# Verfiy section
+		if config.has_section(printer):
+			logger.info('Printer %s is defined in config file' %printer)
+			printerProperties = config.items(printer)			
+			# convert to dictionary
+			printerPropertiesDictionary = {'printqueue': printer}
+			for pproperty in printerProperties:				
+				printerPropertiesDictionary[pproperty[0]] = pproperty[1]			
+			if (installPrintQueue(printerPropertiesDictionary)):
+				logger.info('Successfully installed printer %s' %printer)
+			else:
+				logger.error('Could not install printer %s' %printer)
+		else:
+			logger.error('Printer %s is not defined in config file. Cannot install it' %printer)
 	
 def setupLoggingDirectories():
 	"""
@@ -293,6 +482,19 @@ def setupLoggingDirectories():
 		logger.error('Could not set permissions for %s' %pharosLogDIR)	
 		logger.error('Error: %s Message: %s' %(errCode, errMessage))
 	
+	# create individual log files
+	for lfile in programLogFiles:
+		logger.info('Creating log file %s' %os.path.join(pharosLogDIR, lfile))
+		lfilehandle = open(os.path.join(pharosLogDIR, lfile), 'w')
+		lfilehandle.close()
+		logger.info('file created successfully')
+		try:
+			chmod = subprocess.check_output(['chmod', '777', os.path.join(pharosLogDIR, lfile)])
+			logger.info('successfully changed permissions for file %s' %os.path.join(pharosLogDIR, lfile))
+		except CalledProcessError as (errCode, errMessage):
+			logger.error('Could not set permissions for %s' %s.path.join(pharosLogDIR, lfile))	
+			logger.error('Error: %s Message: %s' %(errCode, errMessage))
+	
 def main():
 	"""
 	The main installer script
@@ -311,12 +513,11 @@ def main():
 	# Setup Popup server to run at login
 	addPopupServerToLogin()
 	
-	# Setup Print Queues
-	installPrintQueues()
-	
 	# Setup Log Directories
 	setupLoggingDirectories()
 	
+	# Setup Print Queues
+	installPrintQueuesUsingConfigFile()
 	
 
 # Main Script ============================
