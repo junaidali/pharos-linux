@@ -30,18 +30,49 @@ import ConfigParser
 logFile = '/tmp/pharosuninstall.log'
 
 # Functions =============================
+def uninstallPharosPrinters():
+	"""
+	Uninstall Pharos Printers
+	"""
+	logger.info('Uninstalling all pharos printers')
+	
+	
+def uninstallBackend():
+	"""
+	Uninstall Pharos Backend
+	"""
+	logger.info('Uninstalling pharos backend')
+	
+	
+def uninstallPharosPopupServer():
+	"""
+	Uninstall Pharos Popup Server
+	"""
+	logger.info('Uninstall Pharos Popup Server')
+	
+	
+def uninstallLogFiles():
+	"""
+	Remove log files used
+	"""
+	logger.info('Uninstall Log Files')
+
 def uninstall():
 	""""
 	The main function
 	"""
 	logger.info('Beginning pharos uninstallation')
 	
+	uninstallPharosPrinters()
 	
+	uninstallBackend()
+	
+	uninstallPharosPopupServer()
+	
+	uninstallLogFiles()
 	
 	# Quit
 	sys.exit(0)
-	
-
 
 # Main Script ============================
 
