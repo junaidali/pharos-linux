@@ -6,10 +6,17 @@
 # Author: Junaid Ali
 # Version: 1.0
 
+__name__ = 'printerutil'
+__version__ = '1.0'
+
 # Imports ===============================
 
 import subprocess
 import re
+import tempfile
+import os
+import shutil
+import stat
 
 # Class definitions =====================
 class PrinterUtility:
@@ -162,6 +169,26 @@ class PrinterUtility:
 			except subprocess.CalledProcessError:
 				self.logger.error('Could not add printer using lpadmin')
 			
+			# Enable Duplex if needed
+			if printer.has_key('duplex'):
+				if printer['duplex'] == 'yes' or printer['duplex'] == 'Yes' or printer['duplex'] == 'YES':
+					self.logger.info('Enabling duplex printing for printer %s' %printer['printqueue'])
+					
+					if printer.has_key('make'):
+						if printer['make'] == 'hp' or printer['make'] == 'HP' or printer['make'] == 'Hp' or printer['make'] == 'hP':
+							self.logger.info('Processing duplex printing for HP printer')
+							if self.enableDuplexPrintingForHPPrinter(printer['printqueue']):
+								self.logger.info('Successfully enabled duplexing for printer %s' %printer['printqueue'])
+							else:
+								self.logger.warn('Could not enable duplexing for printer %s' %printer['printqueue'])
+						
+					if self.enableDuplexPrinting(printer['printqueue']):
+						self.logger.info('Successfully enabled duplexing for printer %s' %printer['printqueue'])
+					else:
+						self.logger.warn('Could not enable duplexing for printer %s' %printer['printqueue'])
+				else:
+					self.logger.info('No need to enable duplexer for printer %s' %printer['printqueue'])
+							
 			# Enable Printer
 			if self.enablePrinter(printer['printqueue']):
 				self.logger.info('Successfully enabled printer %s' %printer['printqueue'])
@@ -179,10 +206,123 @@ class PrinterUtility:
 			self.logger.error('Could not find the required driver installed on the system. Cannot install printer')
 			return False		
 
+	
+	def queryPrinterOption(self, printer, option):
+		"""
+		Queries the printer for a specific option
+		"""
+		queryCommand = ['lpoptions', '-p', printer]
+		value = ''
+		self.logger.info('Querying printer for option %s' %option)
+		try:
+			lpoption = subprocess.check_output(queryCommand)
+			allOptions = lpoption.split(' ')
+			allOptionsDictionary = {}
+			for pOption in allOptions:
+				if re.search('=', pOption):
+					allOptionsDictionary[pOption.split('=')[0].strip()] = pOption.split('=')[1].strip()
+			
+			if allOptionsDictionary.has_key(option):
+				value = allOptionsDictionary[option]
+				
+		except subprocess.CalledProcessError:
+			self.logger.error('Could not set option %s with value %s printer %s' %(option, value, printer))			
+		
+		if value != '':
+			self.logger.info('The printer has option %s set to %s' %(option, value))
+		return value
+	
+	def setPrinterOption(self, printer, option, value):
+		"""
+		Sets a given option for the printer device
+		"""
+		self.logger.info('Setting option %s with value %s for printer %s' %(option, value, printer))
+		optionString = option + "=" + value
+		printerOptionCommand = ['lpoptions', '-p', printer, '-o', optionString]
+		self.logger.info('Running lptions command %s' %printerOptionCommand)
+		try:
+			lpoption = subprocess.check_output(printerOptionCommand)
+		except subprocess.CalledProcessError:
+			self.logger.error('Could not set option %s with value %s printer %s' %(option, value, printer))		
+			return False
+		
+		self.logger.info('Checking if option was correctly set')
+		currentValue = self.queryPrinterOption(printer, option)
+		if currentValue == value:
+			self.logger.info('The option %s has been correctly setup to %s for printer %s' %(option, value, printer))
+		else:
+			self.logger.warn('The option %s has been incorrectly setup to %s for printer %s' %(option, currentValue, printer))
+	
+	def enableDuplexPrintingForHPPrinter(self, printer):
+		"""
+		Enables duplexing for HP printer
+		"""
+		self.logger.info('Enabling duplex printing for HP printer %s' %printer)
+		
+		# Update the driver ppd
+		ppdFile = os.path.join('/etc/cups/ppd', printer + '.ppd')
+		newppdFile = tempfile.NamedTemporaryFile(delete=False)
+		
+		self.logger.info('Checking if ppd file %s exists' %ppdFile)
+		if os.path.exists(ppdFile):
+			self.logger.info('ppd file %s exists' %ppdFile)
+			ppd = open(ppdFile, 'r')
+			for line in ppd:				
+				if line.startswith("*DefaultDuplex: None", 0, len("*DefaultDuplex: None")):
+					newppdFile.writelines('*DefaultDuplex: DuplexNoTumble\n')
+				elif line.startswith("*DefaultOptionDuplex: False", 0, len("*DefaultOptionDuplex: False")):
+					newppdFile.writelines('*DefaultOptionDuplex: True\n')
+				else:
+					newppdFile.writelines(line)
+			newppdFile.close()
+			ppd.close()
+			self.logger.info('successfully created file %s' %newppdFile.name)
+			try:				
+				shutil.copy(newppdFile.name, ppdFile)
+				self.logger.info('Successfully copied the modified ppd file to %s' %ppdFile)
+				
+				# update permission on new file
+				if os.path.exists(ppdFile):
+					self.logger.info('Updating permissions on file %s' %ppdFile)
+					try:
+						chmod = subprocess.call(['chmod', '644', ppdFile])
+					except subprocess.CalledProcessError:
+						self.logger.error('Could not change permission for file %s' %ppdFile)						
+					
+				# delete temp file
+				os.remove(newppdFile.name)
+				self.logger.info('Successfully deleted file %s' %newppdFile)
+			except IOError as (errCode, errMessage):
+				logger.error('Could not copy file %s to %s' %(newppdFile.name, ppdFile))	
+				logger.error('Error: %s Message: %s' %(errCode, errMessage))			
+		else:
+			self.logger.warn('ppd file %s does not exists' %ppdFile)
+		
+		self.logger.info('Successfully enabled duplexing for printer %s' %printer)
+		return True
+			
+	def enableDuplexPrinting(self, printer):
+		"""
+		Enables default duplex printing
+		"""
+		self.logger.info('Enabling duplex printing for printer %s' %printer)
+		
+		enableDuplexCommand = ['lpoptions', '-p', printer, '-o', 'duplex=DuplexNoTumble']
+		self.logger.info('Enabling duplex printing for printer %s using command %s' %(printer, enableDuplexCommand))
+		try:
+			lpinfo = subprocess.check_output(enableDuplexCommand)
+		except subprocess.CalledProcessError:
+			self.logger.error('Could not enable duplexing for printer %s' %printer)		
+			return False
+		
+		self.logger.info('Successfully enabled duplexing for printer %s' %printer)
+		return True
+			
 	def getAllPrintersByBackend(self, backend=None):
 		"""
 		returns all printers by queue backend
 		e.g. lpd, usb, socket, etc.
 		"""
 		self.logger.info('Getting list of all printers by queue backend type')
-		
+		queryPrinterCommand = ['lpstat', '-p']
+		self.logger.info('Querying printers using')

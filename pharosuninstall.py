@@ -30,50 +30,57 @@ import ConfigParser
 logFile = '/tmp/pharosuninstall.log'
 
 # Functions =============================
-def uninstallPharosPrinters():
+class PharosUninstall:
 	"""
-	Uninstall Pharos Printers
+	Handles the uninstallation of the pharos remote printing package
 	"""
-	logger.info('Uninstalling all pharos printers')
-	printerUtility.getAllPrintersByBackend(backend='pharos')
-	
-	
-def uninstallBackend():
-	"""
-	Uninstall Pharos Backend
-	"""
-	logger.info('Uninstalling pharos backend')
-	
-	
-def uninstallPharosPopupServer():
-	"""
-	Uninstall Pharos Popup Server
-	"""
-	logger.info('Uninstall Pharos Popup Server')
-	
-	
-def uninstallLogFiles():
-	"""
-	Remove log files used
-	"""
-	logger.info('Uninstall Log Files')
+	def __init__(self, log):
+		self.logger = log
+		
+	def uninstallPharosPrinters(self):
+		"""
+		Uninstall Pharos Printers
+		"""
+		logger.info('Uninstalling all pharos printers')
+		printerUtility.getAllPrintersByBackend(backend='pharos')
+		
+		
+	def uninstallBackend(self):
+		"""
+		Uninstall Pharos Backend
+		"""
+		logger.info('Uninstalling pharos backend')
+		
+		
+	def uninstallPharosPopupServer(self):
+		"""
+		Uninstall Pharos Popup Server
+		"""
+		logger.info('Uninstall Pharos Popup Server')
+		
+		
+	def uninstallLogFiles(self):
+		"""
+		Remove log files used
+		"""
+		logger.info('Uninstall Log Files')
 
-def uninstall():
-	""""
-	The main function
-	"""
-	logger.info('Beginning pharos uninstallation')
-	
-	uninstallPharosPrinters()
-	
-	uninstallBackend()
-	
-	uninstallPharosPopupServer()
-	
-	uninstallLogFiles()
-	
-	# Quit
-	sys.exit(0)
+	def uninstall(self):
+		""""
+		The main function
+		"""
+		logger.info('Beginning pharos uninstallation')
+		
+		self.uninstallPharosPrinters()
+		
+		self.uninstallBackend()
+		
+		self.uninstallPharosPopupServer()
+		
+		self.uninstallLogFiles()
+		
+		# Quit
+		sys.exit(0)
 
 # Main Script ============================
 
@@ -98,8 +105,10 @@ sys.path.append(os.getcwd())
 try:	
 	from printerutils import PrinterUtility
 except:
-	logger.error('Cannot import module pharosuninstall or printerutil')
+	logger.error('Cannot import module printerutil')
 
 printerUtility = PrinterUtility(logger)
+pharosUninstaller = PharosUninstall(logger)
+
 if __name__ == "__main__":
-	uninstall()
+	pharosUninstaller.uninstall()
