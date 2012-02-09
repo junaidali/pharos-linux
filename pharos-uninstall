@@ -25,23 +25,21 @@ import os
 # Script Variables ======================
 logFile = '/tmp/pharosuninstall.log'
 uninstallerSharedLibraryDIR = '/usr/local/lib/pharos'
+cleanupFile = '/tmp/pharoscleanup.sh'
 
 # Functions =============================
-def createCleanupFile():
+def createCleanupFile(cleanupFile):
 	"""
 	Creates a cleanup file
-	"""
-	cleanupFileData = """
-#!/usr/bin/python
-
-try:
-	os.unlink(%s)
-except:
-	
-
-	
-	"""
-
+	"""	
+	pharosUninstallerExe = '/usr/local/bin/pharos-uninstall'
+	logger.info('Creating cleanup file %s' %cleanupFile)
+	cleanupFileHandle = open(cleanupFile, 'w')
+	cleanupFileHandle.writelines('#!/bin/sh\n')
+	cleanupFileHandle.writelines('sleep 1s\n')
+	cleanupFileHandle.writelines('rm %s\n' %pharosUninstallerExe)
+	cleanupFileHandle.close()
+	logger.info('successfully created cleanup file %s' %cleanupFile)
 
 # Main Script ============================
 
@@ -65,7 +63,7 @@ logger.addHandler(ch)
 sys.path.append(os.getcwd())
 if os.path.exists(uninstallerSharedLibraryDIR):
 	sys.path.append(uninstallerSharedLibraryDIR)
-	
+		
 try:	
 	from printerutils import PrinterUtility
 except:
@@ -91,5 +89,9 @@ pharosUninstaller = PharosUninstaller(logger, printerUtility, processUtility)
 if __name__ == "__main__":
 	if pharosUninstaller.uninstall():
 		logger.info('Uninstaller terminated successfully')
+		createCleanupFile(cleanupFile)
+		if os.path.exists(cleanupFile):
+			logger.info('Running cleanup file %s' %cleanupFile)
+			pid = subprocess.Popen([cleanupFile]).pid			
 	else:
 		logger.warn('The uninstaller did not complete successfully')
