@@ -42,8 +42,30 @@ class PharosUninstall:
 		Uninstall Pharos Printers
 		"""
 		logger.info('Uninstalling all pharos printers')
-		printerUtility.getAllPrintersByBackend(backend='pharos')
+		allLocalPrinters = printerUtility.getAllPrinters()
+		pharosPrinter = []
+		for printer in allLocalPrinters.keys():
+			printerSettings = allLocalPrinters[printer]
+			if printerSettings.has_key('device-uri'):
+				self.logger.info('Checking if printer %s with device uri %s is a pharos printer' %(printer, printerSettings['device-uri']))
+				if re.match('pharos:\/\/', printerSettings['device-uri']):
+					self.logger.info('Printer %s is a pharos printer' %printer)
+					pharosPrinter.append(printer)
+				else:
+					self.logger.info('Printer %s is not a pharos printer' %printer)				
+			else:
+				self.logger.warn('could not find device-uri in printer settings %s' %printerSettings)
 		
+		if len(pharosPrinter) > 0:
+			self.logger.info('There are total %s pharos printers installed on the system.' %len(pharosPrinter))
+			for printer in pharosPrinter:
+				self.logger.info('Trying to delete printer %s' %printer)
+				if printerUtility.deletePrinter(printer):
+					self.logger.info('Printer %s successfully deleted' %printer)
+				else:
+					self.logger.info('Could not delete printer %s' %printer)
+		else:
+			self.logger.warn('There are no pharos printers installed on the system')
 		
 	def uninstallBackend(self):
 		"""

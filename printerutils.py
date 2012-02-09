@@ -206,31 +206,34 @@ class PrinterUtility:
 			self.logger.error('Could not find the required driver installed on the system. Cannot install printer')
 			return False		
 
-	
-	def queryPrinterOption(self, printer, option):
+	def queryPrinterOption(self, printer, option='all'):
 		"""
-		Queries the printer for a specific option
+		Queries the printer for a specific option or all options
 		"""
 		queryCommand = ['lpoptions', '-p', printer]
 		value = ''
-		self.logger.info('Querying printer for option %s' %option)
+		allOptionsDictionary = {}
+		self.logger.info('Querying printer %s for option %s' %(printer, option))
 		try:
 			lpoption = subprocess.check_output(queryCommand)
-			allOptions = lpoption.split(' ')
-			allOptionsDictionary = {}
+			allOptions = lpoption.split(' ')			
 			for pOption in allOptions:
 				if re.search('=', pOption):
 					allOptionsDictionary[pOption.split('=')[0].strip()] = pOption.split('=')[1].strip()
 			
-			if allOptionsDictionary.has_key(option):
-				value = allOptionsDictionary[option]
+			if option != 'all':
+				if allOptionsDictionary.has_key(option):
+					value = allOptionsDictionary[option]
 				
 		except subprocess.CalledProcessError:
 			self.logger.error('Could not set option %s with value %s printer %s' %(option, value, printer))			
 		
-		if value != '':
-			self.logger.info('The printer has option %s set to %s' %(option, value))
-		return value
+		if option != 'all':
+			if value != '':
+				self.logger.info('The printer has option %s set to %s' %(option, value))
+			return value
+		else:
+			return allOptionsDictionary
 	
 	def setPrinterOption(self, printer, option, value):
 		"""
@@ -317,12 +320,29 @@ class PrinterUtility:
 		
 		self.logger.info('Successfully enabled duplexing for printer %s' %printer)
 		return True
-			
-	def getAllPrintersByBackend(self, backend=None):
+	
+	def getAllPrinters(self):
 		"""
 		returns all printers by queue backend
 		e.g. lpd, usb, socket, etc.
 		"""
+		allPrinters = {}
 		self.logger.info('Getting list of all printers by queue backend type')
 		queryPrinterCommand = ['lpstat', '-p']
-		self.logger.info('Querying printers using')
+		printersList = []
+		self.logger.info('Querying printers using command %s' %queryPrinterCommand)
+		try:
+			lpstat = subprocess.check_output(queryPrinterCommand)
+			printersStat = lpstat.split('\n')
+			for printerStat in printersStat:
+				if re.match('^printer\s(?P<printer>[\w\s]+)\sis[\w\s]+', printerStat):
+					printersList.append(re.match('^printer\s(?P<printer>[\w\s]+)\sis[\w\s]+', printerStat).group('printer'))
+			self.logger.info('All printers = %s' %printersList)
+		except subprocess.CalledProcessError:
+			self.logger.error('Could not query all printers printer using lpstat')		
+		
+		if len(printersList) > 0:
+			for printer in printersList:
+				allPrinters[printer] = self.queryPrinterOption(printer, option='all')
+		self.logger.info('All printer = %s' %allPrinters)
+		return allPrinters
