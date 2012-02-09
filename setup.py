@@ -44,36 +44,6 @@ gnomeWindowManagerRegularExpression = 'gnome|unity'
 kdeWindowManagerRegularExpression = 'kde'
 
 # Functions =============================
-def checkProcess(processName):
-	"""
-	Checks if the given process is running
-	"""
-	logger.info('Checking if %s is running' %processName)
-	logger.info('Getting list of processes')
-	try:
-		ps = subprocess.check_output(['ps', 'ax'])
-	except CalledProcessError as (errCode, errMessage):
-		logger.error('Could not get list of running processes')	
-		logger.error('Error: %s Message: %s' %(errCode, errMessage))
-		return False
-		
-	processes = ps.split('\n')
-	processFound = False
-	for process in processes:
-		if re.search(processName, process):
-			logger.info('%s is running with details: %s ' %(processName, process))
-			processFound = True
-			break			
-		else:
-			logger.info('Process %s is not %s' %(process, processName))
-	if processFound:
-		logger.info('%s is running.' %processName)
-		return True
-	else:
-		logger.error('%s is not running.' %processName)
-		return False
-		
-		
 def checkPreReqs():
 	"""
 	Verifies if all program pre-requisites are satisfied. If not then exit the program
@@ -82,7 +52,7 @@ def checkPreReqs():
 	
 	# Check if CUPS is running
 	logger.info('checking if cups is available')
-	if checkProcess('cups'):
+	if processUtils.isProcessRunning('cups'):
 		logger.info('CUPS is installed and running. Can continue')
 	else:
 		logger.error('CUPS is either not installed or not running. Please make sure CUPS is installed and running before proceeding')
@@ -248,10 +218,10 @@ def addPopupServerToLogin():
 	Add the popup server for all future users
 	"""	
 	logger.info('Analyzing desktop environment')
-	if checkProcess('gnome'):
+	if processUtils.isProcessRunning('gnome'):
 		logger.info('User is using gnome window manager')
 		addPopupServerToGnomeSession()
-	elif checkProcess('kde'):
+	elif processUtils.isProcessRunning('kde'):
 		logger.info('User is using kde Window Manager')
 		addPopupServerToKDESession()
 	else:
@@ -378,20 +348,27 @@ logger.addHandler(ch)
 # import the pharosuninstall file
 sys.path.append(os.getcwd())
 try:	
-	from printerutils import *
+	from printerutils import PrinterUtility
 except:
 	logger.error('Cannot import module printerutil')	
 	sys.exit(1)
-	
+
 try:
-	from pharosuninstall import *
+	from processutils import ProcessUtility
+except:
+	logger.error('Cannot import module processutils')	
+	sys.exit(1)
+		
+try:
+	from pharosuninstall import PharosUninstaller
 except:
 	logger.error('Cannot import module pharosuninstall')	
 	sys.exit(1)
-
+	
 # Create printer utility object
 printerUtility = PrinterUtility(logger)
-pharosUninstaller = PharosUninstall(logger)
+pharosUninstaller = PharosUninstaller(logger)
+processUtils = ProcessUtility(logger)
 
 if __name__ == "__main__":
 	main()

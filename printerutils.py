@@ -6,7 +6,7 @@
 # Author: Junaid Ali
 # Version: 1.0
 
-__name__ = 'printerutil'
+__name__ = 'printerutils'
 __version__ = '1.0'
 
 # Imports ===============================
