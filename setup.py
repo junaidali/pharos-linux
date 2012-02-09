@@ -245,6 +245,7 @@ def installPrintQueuesUsingConfigFile():
 	for printer in printers:
 		printer = printer.strip()
 		logger.info('Installing printer %s' %printer)
+		print('Installing printer %s' %printer)
 		# Verfiy section
 		if config.has_section(printer):
 			logger.info('Printer %s is defined in config file' %printer)
@@ -365,25 +366,27 @@ def main():
 	The main installer script
 	"""
 	logger.info('Beginning %s' %sys.argv[0])
-	
+	print('Checking for pre-requisites')
 	# check prerequisites
 	checkPreReqs()
-	
+	print('Installing backend')
 	# Install backend
 	installBackend()
-	
+	print('Installing Popup server')
 	# Install popup server files
 	installPopupServer()
-	
+	print('Adding popup server to login')
 	# Setup Popup server to run at login
 	addPopupServerToLogin()
-	
+	print('Setting up log directories')
 	# Setup Log Directories
 	setupLoggingDirectories()
 	
+	print('Installing printer queues')
 	# Setup Print Queues
 	installPrintQueuesUsingConfigFile()
 	
+	print('Adding uninstaller')
 	# Install Uninstaller
 	installUninstaller()
 	

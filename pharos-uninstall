@@ -21,6 +21,7 @@
 import logging
 import sys
 import os
+import subprocess
 
 # Script Variables ======================
 logFile = '/tmp/pharosuninstall.log'
@@ -35,11 +36,17 @@ def createCleanupFile(cleanupFile):
 	pharosUninstallerExe = '/usr/local/bin/pharos-uninstall'
 	logger.info('Creating cleanup file %s' %cleanupFile)
 	cleanupFileHandle = open(cleanupFile, 'w')
-	cleanupFileHandle.writelines('#!/bin/sh\n')
-	cleanupFileHandle.writelines('sleep 1s\n')
-	cleanupFileHandle.writelines('rm %s\n' %pharosUninstallerExe)
+	cleanupFileHandle.writelines('#!/bin/sh\n')	
+	cleanupFileHandle.writelines('sleep 5s\n')
+	cleanupFileHandle.writelines('rm -f %s\n' %pharosUninstallerExe)	
 	cleanupFileHandle.close()
 	logger.info('successfully created cleanup file %s' %cleanupFile)
+	
+	logger.info('setting execution bit on file %s' %cleanupFile)
+	try:
+		chmod = subprocess.call(['chmod', '+x', cleanupFile])
+	except:
+		logger.warn('Cannot set executable bit on file %s' %cleanupFile)
 
 # Main Script ============================
 
@@ -92,6 +99,9 @@ if __name__ == "__main__":
 		createCleanupFile(cleanupFile)
 		if os.path.exists(cleanupFile):
 			logger.info('Running cleanup file %s' %cleanupFile)
-			pid = subprocess.Popen([cleanupFile]).pid			
+			try:
+				pid = subprocess.Popen([cleanupFile], shell=False, stdin=None, stdout=None, stderr=None)
+			except:
+				logger.warn('could not run cleanup command. manually remove the uninstaller file')
 	else:
 		logger.warn('The uninstaller did not complete successfully')

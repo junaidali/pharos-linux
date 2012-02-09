@@ -42,7 +42,7 @@ class PrinterUtility:
 				self.logger.info('Printer %s already exists' %printer)
 				return True
 		except subprocess.CalledProcessError:
-			self.logger.warn('Could not check if printer exists using lpoptions command')		
+			self.logger.info('Could not check if printer exists using lpoptions command or printer does not exists')		
 			
 		return False
 	
@@ -138,7 +138,7 @@ class PrinterUtility:
 						printerDriverPath = driverPath
 						break
 					else:
-						self.logger.warn('Driver does not match')
+						self.logger.info('Driver does not match')
 		
 		if driverFound:
 			# Check if printer already exists.
