@@ -56,16 +56,19 @@ class PharosUninstall:
 			else:
 				self.logger.warn('could not find device-uri in printer settings %s' %printerSettings)
 		
+		allPharosPrintersDeleted = True
 		if len(pharosPrinter) > 0:
-			self.logger.info('There are total %s pharos printers installed on the system.' %len(pharosPrinter))
+			self.logger.info('There are total %s pharos printers installed on the system.' %len(pharosPrinter))			
 			for printer in pharosPrinter:
 				self.logger.info('Trying to delete printer %s' %printer)
 				if printerUtility.deletePrinter(printer):
 					self.logger.info('Printer %s successfully deleted' %printer)
 				else:
 					self.logger.info('Could not delete printer %s' %printer)
+					allPharosPrintersDeleted = False			
 		else:
 			self.logger.warn('There are no pharos printers installed on the system')
+		return allPharosPrintersDeleted
 		
 	def uninstallBackend(self):
 		"""
@@ -93,9 +96,11 @@ class PharosUninstall:
 		"""
 		logger.info('Beginning pharos uninstallation')
 		
-		self.uninstallPharosPrinters()
-		
-		self.uninstallBackend()
+		if (self.uninstallPharosPrinters()):
+			self.logger.info('All pharos printers have been deleted. Can proceed with uninstalling the CUPS pharos backend')
+			self.uninstallBackend()
+		else:
+			self.logger.warn('All pharos printers could not be deleted. Will not be removing the CUPS pharos backend')
 		
 		self.uninstallPharosPopupServer()
 		
