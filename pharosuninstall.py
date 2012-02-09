@@ -256,13 +256,14 @@ class PharosUninstaller:
 		The main function
 		"""
 		self.logger.info('Beginning pharos uninstallation')
-		
+		returnCode = True
 		if (self.uninstallPharosPrinters()):
 			self.logger.info('All pharos printers have been deleted. Can proceed with uninstalling the CUPS pharos backend')
 			if self.uninstallBackend():
 				self.logger.info('Successfully removed backend file')
 			else:
 				self.logger.error('Could not remove backend file')
+				returnCode = False
 		else:
 			self.logger.warn('All pharos printers could not be deleted. Will not be removing the CUPS pharos backend')
 		
@@ -270,16 +271,17 @@ class PharosUninstaller:
 			self.logger.info('Successfully removed pharos popup file')
 		else:
 			self.logger.error('Could not remove pharos popup file')
+			returnCode = False
 		
 		if self.uninstallStartupEntries():
 			self.logger.info('Successfully removed startup entries for pharos popup')
 		else:
 			self.logger.error('Could not remove startup entries for pharos popup')
+			returnCode = False
 		
 		if self.uninstallLogFiles():
 			self.logger.info('Successfully removed pharos log files')
 		else:
 			self.logger.error('Could not remove startup pharos log files')
-		
-		# Quit
-		sys.exit(0)
+			returnCode = False
+		return returnCode

@@ -59,7 +59,7 @@ def checkPreReqs():
 		logger.info('CUPS is installed and running. Can continue')
 	else:
 		logger.error('CUPS is either not installed or not running. Please make sure CUPS is installed and running before proceeding')
-		pharosUninstaller.uninstall()
+		uninstallAndExit()
 	
 	# Check wxPython	
 	logger.info('checking if wxPython is available')
@@ -67,7 +67,7 @@ def checkPreReqs():
 		import wxPython
 	except:
 		logger.error('wxPython is not installed. Please make sure wxPython is installed before proceeding')
-		pharosUninstaller.uninstall()
+		uninstallAndExit()
 	logger.info('wxPython is installed')
 	
 def installBackend():
@@ -82,7 +82,7 @@ def installBackend():
 		logger.info('CUPS backend directory %s exists' %backendDIR)
 	else:
 		logger.error('CUPS backend directory %s not found. Make sure CUPS is correctly setup before proceeding.' %backendDIR)
-		pharosUninstaller.uninstall()
+		uninstallAndExit()
 	
 	logger.info('Copy backend file %s to %s' %(backendFile, backendDIR))
 	try:
@@ -90,13 +90,13 @@ def installBackend():
 	except IOError as (errCode, errMessage):
 		logger.error('Could not copy file %s to %s' %(backendFile, backendDIR))	
 		logger.error('Error: %s Message: %s' %(errCode, errMessage))
-		pharosUninstaller.uninstall()
+		uninstallAndExit()
 	
 	if os.path.exists(os.path.join(backendDIR, backendFile)):
 		logger.info('Backend file copied successfully')
 	else:
 		logger.error('Could not copy file %s to %s' %(backendFile, backendDIR))
-		pharosUninstaller.uninstall()
+		uninstallAndExit()
 	
 	# Set execution bits for backend files
 	logger.info('Set execution bit on the backend files')
@@ -104,7 +104,7 @@ def installBackend():
 		chmod = subprocess.check_output(['chmod', '755', os.path.join(backendDIR, pharosBackendFileName), os.path.join(backendDIR, 'lpd')])
 	except subprocess.CalledProcessError:
 		logger.error('Could not change the execution bit on backend files: %s, %s' %(os.path.join(backendDIR, pharosBackendFileName), os.path.join(backendDIR, 'lpd')))		
-		pharosUninstaller.uninstall()
+		uninstallAndExit()
 	logger.info('Successfully setup the execution bit on backend files: %s, %s' %(os.path.join(backendDIR, pharosBackendFileName), os.path.join(backendDIR, 'lpd')))
 
 def installPopupServer():
@@ -122,7 +122,7 @@ def installPopupServer():
 	except IOError as (errCode, errMessage):
 		logger.error('Could not copy file %s to %s' %(pharosConfig, pharosConfigInstallDIR))
 		logger.error('Error: %s Message: %s' %(errCode, errMessage))
-		pharosUninstaller.uninstall()
+		uninstallAndExit()
 	
 	try:
 		logger.info('Trying to copy %s to %s' %(pharosConfig, pharosConfigInstallDIR))
@@ -131,7 +131,7 @@ def installPopupServer():
 	except IOError as (errCode, errMessage):
 		logger.error('Could not copy file %s to %s' %(pharosConfig, pharosConfigInstallDIR))
 		logger.error('Error: %s Message: %s' %(errCode, errMessage))
-		pharosUninstaller.uninstall()
+		uninstallAndExit()
 	
 def addPopupServerToGnomeSession():
 	"""
@@ -353,7 +353,13 @@ def installUninstaller():
 	else:
 		logger.warn('uninstaller file %s does not exists' %uninstallerFilePath)
 	
-
+def uninstallAndExit():
+	"""
+	In case of error uninstall and exit
+	"""
+	pharosUninstaller.uninstall()
+	sys.exit(1)
+	
 def main():
 	"""
 	The main installer script
@@ -392,7 +398,7 @@ fh = logging.FileHandler(logFile)
 fh.setLevel(logging.DEBUG)
 # create console handler
 ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
+ch.setLevel(logging.WARN)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)

@@ -26,6 +26,23 @@ import os
 logFile = '/tmp/pharosuninstall.log'
 uninstallerSharedLibraryDIR = '/usr/local/lib/pharos'
 
+# Functions =============================
+def createCleanupFile():
+	"""
+	Creates a cleanup file
+	"""
+	cleanupFileData = """
+#!/usr/bin/python
+
+try:
+	os.unlink(%s)
+except:
+	
+
+	
+	"""
+
+
 # Main Script ============================
 
 # Create logger
@@ -72,4 +89,7 @@ processUtility = ProcessUtility(logger)
 pharosUninstaller = PharosUninstaller(logger, printerUtility, processUtility)
 
 if __name__ == "__main__":
-	pharosUninstaller.uninstall()
+	if pharosUninstaller.uninstall():
+		logger.info('Uninstaller terminated successfully')
+	else:
+		logger.warn('The uninstaller did not complete successfully')
