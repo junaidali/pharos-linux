@@ -171,6 +171,7 @@ class PharosUninstaller:
 		
 		# Delete file from root user
 		rootAutoStartFile = os.path.join('/root', '.config', 'autostart', 'pharospopup.desktop')
+		logger.info('Checking autostart file for root')
 		if os.path.exists(rootAutoStartFile):
 			self.logger.info('Trying to delete autostart file %s' %rootAutoStartFile)
 			try:
@@ -182,6 +183,7 @@ class PharosUninstaller:
 		
 		# Delete from future users
 		skelAutoStartFile = os.path.join('/etc/', 'skel', '.config', 'autostart', 'pharospopup.desktop')
+		logger.info('Checking autostart file for future users')
 		if os.path.exists(skelAutoStartFile):
 			self.logger.info('Trying to delete autostart file %s' %skelAutoStartFile)
 			try:
@@ -234,7 +236,18 @@ class PharosUninstaller:
 		"""
 		Remove log files used
 		"""
-		logger.info('Uninstall Log Files')
+		self.logger.info('Uninstall Log Files')
+		self.logger.info('Checking if log directory exists at %s' %pharosLogDIR)
+		if os.path.exists(pharosLogDIR):
+			self.logger.info('Log directory exists. Trying to remove it')
+			try:
+				shutil.rmtree(pharosLogDIR)
+				self.logger.info('Successfully removed directory %s' %pharosLogDIR)
+			except:
+				self.logger.error('Could not remove directory %s' %pharosLogDIR)
+				return False
+		
+		return True		
 
 	def uninstall(self):
 		""""
@@ -256,9 +269,15 @@ class PharosUninstaller:
 		else:
 			self.logger.error('Could not remove pharos popup file')
 		
-		self.uninstallStartupEntries()
+		if self.uninstallStartupEntries():
+			self.logger.info('Successfully removed startup entries for pharos popup')
+		else:
+			self.logger.error('Could not remove startup entries for pharos popup')
 		
-		self.uninstallLogFiles()
+		if self.uninstallLogFiles():
+			self.logger.info('Successfully removed pharos log files')
+		else:
+			self.logger.error('Could not remove startup pharos log files')
 		
 		# Quit
 		sys.exit(0)
