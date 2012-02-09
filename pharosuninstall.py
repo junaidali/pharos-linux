@@ -28,6 +28,7 @@ import ConfigParser
 
 # Script Variables ======================
 logFile = '/tmp/pharosuninstall.log'
+pharosBackendFileName = 'pharos'
 
 # Functions =============================
 class PharosUninstall:
@@ -75,7 +76,20 @@ class PharosUninstall:
 		Uninstall Pharos Backend
 		"""
 		logger.info('Uninstalling pharos backend')
+		backendDIR = '/usr/lib/cups/backend'
+		backendFile = os.path.join(backendDIR, pharosBackendFileName)
+		if os.path.exists(backendFile):
+			self.logger.info('Backend file %s exists. Trying to remove it' %backendFile)
+			try:
+				os.remove(backendFile)
+				logger.info('Successfully removed backend file: %s' %(backendFile))
+			except:
+				self.logger.error('Could not remove backend file %s' %backendFile)
 		
+		if os.path.exists(backendFile):
+			return False
+		else:
+			return True			
 		
 	def uninstallPharosPopupServer(self):
 		"""
@@ -98,7 +112,10 @@ class PharosUninstall:
 		
 		if (self.uninstallPharosPrinters()):
 			self.logger.info('All pharos printers have been deleted. Can proceed with uninstalling the CUPS pharos backend')
-			self.uninstallBackend()
+			if self.uninstallBackend():
+				self.logger.info('Successfully removed backend file')
+			else:
+				self.logger.error('Could not remove backend file')
 		else:
 			self.logger.warn('All pharos printers could not be deleted. Will not be removing the CUPS pharos backend')
 		
