@@ -32,12 +32,15 @@ pharosBackendFileName = 'pharos'
 pharosPopupServerFileName = 'pharospopup'
 pharosConfigFileName = 'pharos.conf'
 printersConfigFile = os.path.join(os.getcwd(), 'printers.conf')
-uninstallFile = 'uninstall-pharos'
+uninstallFile = 'pharos-uninstall'
 
 popupServerInstallDIR = '/usr/local/bin'
 pharosConfigInstallDIR = '/usr/local/etc'
+pharosUninstallerDIR = '/usr/local/bin'
+uninstallerSharedLibraryDIR = '/usr/local/lib/pharos'
 pharosLogDIR = '/var/log/pharos'
 programLogFiles = ['pharos.log', 'pharospopup.log']
+uninstallerSharedLibraryFiles = ['pharosuninstall.pyc', 'printerutils.pyc', 'processutils.pyc']
 
 # Regular Expressions
 gnomeWindowManagerRegularExpression = 'gnome|unity'
@@ -302,6 +305,55 @@ def setupLoggingDirectories():
 			logger.error('Could not set permissions for %s' %s.path.join(pharosLogDIR, lfile))	
 			logger.error('Error: %s Message: %s' %(errCode, errMessage))
 	
+def installUninstaller():
+	"""
+	Setup the uninstaller
+	"""
+	logger.info('Copying the uinstaller files')
+	uninstallerFilePath = os.path.join(os.getcwd(), uninstallFile)
+	if os.path.exists(uninstallerFilePath):
+		logger.info('Copying uninstaller file %s to %s' %(uninstallerFilePath, pharosUninstallerDIR))
+		try:
+			shutil.copyfile(uninstallerFilePath, os.path.join(pharosUninstallerDIR, uninstallFile))
+			logger.info('Successfully copied uninstaller file to %s'  %pharosUninstallerDIR)
+			
+			# Set executable bit
+			logger.info('Setting up permissions on uninstaller file %s' %os.path.join(pharosUninstallerDIR, uninstallFile))
+			try:
+				chmod = subprocess.check_output(['chmod', '755', os.path.join(pharosUninstallerDIR, uninstallFile)])
+				logger.info('Successfully set up permissions on uninstaller file %s' %os.path.join(pharosUninstallerDIR, uninstallFile))
+			except subprocess.CalledProcessError:
+				logger.error('Could not set up permissions on uninstaller file %s' %os.path.join(pharosUninstallerDIR, uninstallFile))			
+		except:
+			logger.error('Could not copy uninstall file to %s' %pharosUninstallerDIR)
+		
+		# Copy the shared library files
+		logger.info('Checking if directory %s exists' %uninstallerSharedLibraryDIR)
+		if not os.path.exists(uninstallerSharedLibraryDIR):
+			logger.info('Trying to create directroy %s' %uninstallerSharedLibraryDIR)
+			try:
+				os.makedirs(uninstallerSharedLibraryDIR)
+				logger.info('Successfully created directory %s' %uninstallerSharedLibraryDIR)
+			except:
+				logger.error('Could not create directory %s' %uninstallerSharedLibraryDIR)
+		
+		if os.path.exists(uninstallerSharedLibraryDIR):
+			logger.info('Trying to copy shared library files')
+			for libraryFile in uninstallerSharedLibraryFiles:
+				fullPath = os.path.join(os.getcwd(), libraryFile)
+				if os.path.exists(fullPath):
+					logger.info('Copying file %s to %s' %(fullPath, uninstallerSharedLibraryDIR))
+					try:
+						shutil.copyfile(fullPath, os.path.join(uninstallerSharedLibraryDIR, libraryFile))
+						logger.info('Successfully copied file %s to %s' %(fullPath, uninstallerSharedLibraryDIR))
+					except:
+						logger.error('Could not copy file %s to %s' %(fullPath, uninstallerSharedLibraryDIR))
+				else:
+					logger.warn('Library file %s not found' %(fullPath))
+	else:
+		logger.warn('uninstaller file %s does not exists' %uninstallerFilePath)
+	
+
 def main():
 	"""
 	The main installer script
@@ -325,6 +377,9 @@ def main():
 	
 	# Setup Print Queues
 	installPrintQueuesUsingConfigFile()
+	
+	# Install Uninstaller
+	installUninstaller()
 	
 
 # Main Script ============================
@@ -367,8 +422,8 @@ except:
 	
 # Create printer utility object
 printerUtility = PrinterUtility(logger)
-pharosUninstaller = PharosUninstaller(logger)
 processUtils = ProcessUtility(logger)
+pharosUninstaller = PharosUninstaller(logger, printerUtility, processUtils)
 
 if __name__ == "__main__":
 	main()

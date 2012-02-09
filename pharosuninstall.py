@@ -42,15 +42,17 @@ class PharosUninstaller:
 	"""
 	Handles the uninstallation of the pharos remote printing package
 	"""
-	def __init__(self, log):
+	def __init__(self, log, printerUtil, processUtil):
 		self.logger = log
+		self.printerUtility = printerUtil
+		self.processUtility = processUtil
 		
 	def uninstallPharosPrinters(self):
 		"""
 		Uninstall Pharos Printers
 		"""
-		logger.info('Uninstalling all pharos printers')
-		allLocalPrinters = printerUtility.getAllPrinters()
+		self.logger.info('Uninstalling all pharos printers')
+		allLocalPrinters = self.printerUtility.getAllPrinters()
 		pharosPrinter = []
 		for printer in allLocalPrinters.keys():
 			printerSettings = allLocalPrinters[printer]
@@ -69,7 +71,7 @@ class PharosUninstaller:
 			self.logger.info('There are total %s pharos printers installed on the system.' %len(pharosPrinter))			
 			for printer in pharosPrinter:
 				self.logger.info('Trying to delete printer %s' %printer)
-				if printerUtility.deletePrinter(printer):
+				if self.printerUtility.deletePrinter(printer):
 					self.logger.info('Printer %s successfully deleted' %printer)
 				else:
 					self.logger.info('Could not delete printer %s' %printer)
@@ -82,7 +84,7 @@ class PharosUninstaller:
 		"""
 		Uninstall Pharos Backend
 		"""
-		logger.info('Uninstalling pharos backend')
+		self.logger.info('Uninstalling pharos backend')
 		backendDIR = '/usr/lib/cups/backend'
 		backendFile = os.path.join(backendDIR, pharosBackendFileName)
 		if os.path.exists(backendFile):
@@ -106,9 +108,9 @@ class PharosUninstaller:
 		
 		# Kill popup server if running
 		self.logger.info('Checking if popup server %s is running' %pharosPopupServerFileName)
-		if processUtility.isProcessRunning(pharosPopupServerFileName):
+		if self.processUtility.isProcessRunning(pharosPopupServerFileName):
 			self.logger.info('Popup server is running. Trying to kill it')
-			if processUtility.killProcess(pharosPopupServerFileName):
+			if self.processUtility.killProcess(pharosPopupServerFileName):
 				self.logger.info('Popup server was successfully terminated')
 			else:
 				self.logger.error('Popup server could not be terminated. Popup server files will not be removed')
@@ -158,7 +160,7 @@ class PharosUninstaller:
 		self.logger.info('Getting list of current users')
 		currentUsers = os.listdir('/home')	
 		for user in currentUsers:
-			logger.info('Checking autostart file for user %s' %user)
+			self.logger.info('Checking autostart file for user %s' %user)
 			pharosAutoStartFile = os.path.join('/home', user, '.config', 'autostart', 'pharospopup.desktop')
 			if os.path.exists(pharosAutoStartFile):
 				self.logger.info('Autostart file %s found. Trying to delete it' %pharosAutoStartFile)
@@ -171,7 +173,7 @@ class PharosUninstaller:
 		
 		# Delete file from root user
 		rootAutoStartFile = os.path.join('/root', '.config', 'autostart', 'pharospopup.desktop')
-		logger.info('Checking autostart file for root')
+		self.logger.info('Checking autostart file for root')
 		if os.path.exists(rootAutoStartFile):
 			self.logger.info('Trying to delete autostart file %s' %rootAutoStartFile)
 			try:
@@ -183,7 +185,7 @@ class PharosUninstaller:
 		
 		# Delete from future users
 		skelAutoStartFile = os.path.join('/etc/', 'skel', '.config', 'autostart', 'pharospopup.desktop')
-		logger.info('Checking autostart file for future users')
+		self.logger.info('Checking autostart file for future users')
 		if os.path.exists(skelAutoStartFile):
 			self.logger.info('Trying to delete autostart file %s' %skelAutoStartFile)
 			try:
@@ -209,18 +211,18 @@ class PharosUninstaller:
 		Uninstalls the startup entries from the session manager
 		"""
 		self.logger.info('Removing Session Manager Startup entries for pharos poups')
-		logger.info('Analyzing desktop environment')
+		self.logger.info('Analyzing desktop environment')
 		returnCode = False
-		if processUtility.isProcessRunning('gnome'):
-			logger.info('User is using gnome window manager')
+		if self.processUtility.isProcessRunning('gnome'):
+			self.logger.info('User is using gnome window manager')
 			if self.removePopupServerFromGnomeSession():
 				self.logger.info('Successfully cleaned up startup entries from GNOME session')
 				returnCode = True
 			else:
 				self.logger.warn('Could not remove all startup entries from GNOME session')
 				returnCode = False
-		elif processUtility.isProcessRunning('kde'):
-			logger.info('User is using kde Window Manager')
+		elif self.processUtility.isProcessRunning('kde'):
+			self.logger.info('User is using kde Window Manager')
 			if self.removePopupServerFromKDESession():
 				self.logger.info('Successfully cleaned up startup entries from KDE session')
 				returnCode = True
@@ -228,8 +230,8 @@ class PharosUninstaller:
 				self.logger.warn('Could not remove all startup entries from KDE session')
 				returnCode = False
 		else:
-			logger.warn('Users window manager is not recognized. Could not remove login scripts for popupserver. Please use your window manager to remove startup script %s' %os.path.join(popupServerInstallDIR,pharosPopupServerFileName))
-		logger.info('Completed removing pharos popup server from login')
+			self.logger.warn('Users window manager is not recognized. Could not remove login scripts for popupserver. Please use your window manager to remove startup script %s' %os.path.join(popupServerInstallDIR,pharosPopupServerFileName))
+		self.logger.info('Completed removing pharos popup server from login')
 		return returnCode
 		
 	def uninstallLogFiles(self):
@@ -253,7 +255,7 @@ class PharosUninstaller:
 		""""
 		The main function
 		"""
-		logger.info('Beginning pharos uninstallation')
+		self.logger.info('Beginning pharos uninstallation')
 		
 		if (self.uninstallPharosPrinters()):
 			self.logger.info('All pharos printers have been deleted. Can proceed with uninstalling the CUPS pharos backend')
@@ -281,42 +283,3 @@ class PharosUninstaller:
 		
 		# Quit
 		sys.exit(0)
-
-# Main Script ============================
-
-# Create logger
-logger = logging.getLogger('pharos-uninstaller')
-logger.setLevel(logging.DEBUG)
-# Create file handler
-fh = logging.FileHandler(logFile)
-fh.setLevel(logging.DEBUG)
-# create console handler
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
-# add loggers
-logger.addHandler(fh)
-logger.addHandler(ch)
-
-# import the uninstall-pharos file
-sys.path.append(os.getcwd())
-try:	
-	from printerutils import PrinterUtility
-except:
-	logger.error('Cannot import module printerutil')
-	sys.exit(0)
-
-try:	
-	from processutils import ProcessUtility
-except:
-	logger.error('Cannot import module printerutil')
-	sys.exit(0)
-
-printerUtility = PrinterUtility(logger)
-pharosUninstaller = PharosUninstaller(logger)
-processUtility = ProcessUtility(logger)
-
-if __name__ == "__main__":
-	pharosUninstaller.uninstall()
