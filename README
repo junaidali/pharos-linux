@@ -1,26 +1,16 @@
 README
 =====
+This program provides a linux equivalent of the Pharos Remote Printing Package available for Windows and Macintosh clients. This package will install a new CUPS backend that will allow printing to lpd queues on the pharos uniprint print server. Also it will install a new pharos popup server that will allow for users to input their printing ID's to be tied with the print jobs they send. This will allow the users to use their printing ID's to release the print jobs at the pharos release stations.
 
-This program provides a linux equivalent of the Pharos Remote Printing Package available for Windows and Macintosh clients. This package will install a new CUPS backend that will allow printing to lpd queues on the pharos uniprint print server. Also it will install a new pharos popup server that will allow for users to input their ID's to be tied with the print jobs they send.
-
-CUPS Backend
+INSTALLATION
 ============
-The cups backend is pharos. Since it uses lpd you need to change the group execution bits for lpd
-Usage: 
-cp pharos /usr/lib/cups/backend/
-chmod 755 /usr/lib/cups/backend/pharos
-chmod 755 /usr/lib/cups/backend/lpd
-killall -HUP cupsd (or "/etc/init.d/cups restart" or "service cups restart")
-lpadmin -p <queue name> -E -v pharos://<print server address>/<print queue>
+To install pharos remote printing open terminal and go to this package directory. Run the setup.py file as administrator user
+# sudo python setup.py
 
-Pharos Popup Server
-===================
-The pharos popup server must be running once a user logs into the desktop session. This popup server listens for incoming request from the cups backend. Once it receives a request it will popup a window asking for users ID. This ID is then returned to the cups system and tied to the print job as the $user.
+You will be presented with an EULA (if present) and if you accept it the installation will continue.
 
-Configuration
+UNINSTALLATION
 ==============
-The config file pharos.conf must be installed in /etc/
-
-Logging
-========
-The cups backend ad the pharos popup server both have seperate logging. The level of logging can be controlled using the configuration file. The log files are written to the /var/logs/pharos directory. Make sure that it is world readable and writable.
+The installer will add an uninstallation program to /usr/local/bin/pharos-uninstall
+To uninstall run the uninstaller as an administrative user
+# sudo python /usr/local/bin/pharos-uninstall
