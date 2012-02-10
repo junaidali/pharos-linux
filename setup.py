@@ -25,6 +25,7 @@ import subprocess
 import re
 import shutil
 import ConfigParser
+import curses
 
 # Script Variables ======================
 logFile = os.path.join(os.getcwd(), 'pharos-linux.log')
@@ -360,12 +361,36 @@ def uninstallAndExit():
 	"""
 	pharosUninstaller.uninstall()
 	sys.exit(1)
+
+def acceptEULA(eulaFile):
+	"""
+	Prompts the user to accept the EULA
+	"""	
+	logger.info('Showing user the end user license agreement from file %s' %eulaFile)
+	eulafd = open(eulaFile, 'r')
+	for line in eulafd:
+		print(line)
+	eulafd.close()
+	
+	userChoice = raw_input('\nDo you accept the EULA (y/n)?:   ')
+	if userChoice in ['y', 'Y', 'yes', 'Yes', 'yEs', 'yeS', 'YEs', 'yES', 'YES']:
+		logger.info('User accepted the EULA')
+		return True
+	else:
+		logger.warn('User did not accept the EULA')
+		return False
 	
 def main():
 	"""
 	The main installer script
 	"""
 	logger.info('Beginning %s' %sys.argv[0])
+	
+	if os.path.exists(os.path.join(os.getcwd(), 'EULA')):
+		logger.info('The EULA file exists. Will prompt user for accepting EULA')
+		if not acceptEULA(os.path.join(os.getcwd(), 'EULA')):
+			uninstallAndExit()
+	
 	print('Checking for pre-requisites')
 	# check prerequisites
 	checkPreReqs()

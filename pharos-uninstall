@@ -50,6 +50,11 @@ def createCleanupFile(cleanupFile):
 
 # Main Script ============================
 
+# Make sure user wants to run it
+userChoice = raw_input('Do you wish to run the pharos remote printing uninstaller (y/n)?:  ')
+if userChoice not in ['y', 'Y', 'yes', 'Yes', 'yEs', 'yeS', 'YEs', 'yES', 'YES']:
+	sys.exit(0)
+
 # Create logger
 logger = logging.getLogger('pharos-uninstaller')
 logger.setLevel(logging.DEBUG)
