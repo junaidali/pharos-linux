@@ -198,15 +198,13 @@ class PharosUninstaller:
 			
 		return removedAllAutoStartFiles
 		
-	
 	def removePopupServerFromKDESession(self):
 		"""
 		Removes the popup server from KDE session manager
 		"""
 		self.logger.warn('function removePopupServerFromKDESession() not implemented')
 		return False
-		
-		
+			
 	def uninstallStartupEntries(self):
 		"""
 		Uninstalls the startup entries from the session manager
@@ -258,6 +256,7 @@ class PharosUninstaller:
 		"""
 		self.logger.info('Beginning pharos uninstallation')
 		returnCode = True
+		print('Uninstalling all pharos printers')
 		if (self.uninstallPharosPrinters()):
 			self.logger.info('All pharos printers have been deleted. Can proceed with uninstalling the CUPS pharos backend')
 			if self.uninstallBackend():
@@ -268,18 +267,21 @@ class PharosUninstaller:
 		else:
 			self.logger.warn('All pharos printers could not be deleted. Will not be removing the CUPS pharos backend')
 		
+		print('Uninstalling pharos popup server')
 		if self.uninstallPharosPopupServer():
 			self.logger.info('Successfully removed pharos popup file')
 		else:
 			self.logger.error('Could not remove pharos popup file')
 			returnCode = False
 		
+		print('Uninstalling autostart entries from GUI session manager')
 		if self.uninstallStartupEntries():
 			self.logger.info('Successfully removed startup entries for pharos popup')
 		else:
 			self.logger.error('Could not remove startup entries for pharos popup')
 			returnCode = False
 		
+		print('Uninstalling log files')
 		if self.uninstallLogFiles():
 			self.logger.info('Successfully removed pharos log files')
 		else:
