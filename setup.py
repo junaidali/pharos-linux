@@ -415,6 +415,7 @@ def main():
 	# Install Uninstaller
 	installUninstaller()
 	
+	print('\nIIT Remote printing has been successfully installed on your computer. Please restart your GUI session to complete the installation process. The simplest way to do this is to log out and log back in!')
 
 # Main Script ============================
 
