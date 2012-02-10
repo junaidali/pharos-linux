@@ -93,12 +93,13 @@ class PharosUninstaller:
 				os.remove(backendFile)
 				logger.info('Successfully removed backend file: %s' %(backendFile))
 			except:
-				self.logger.error('Could not remove backend file %s' %backendFile)
+				self.logger.info('Could not remove backend file %s' %backendFile)
 		
 		if os.path.exists(backendFile):
+			self.logger.error('Could not remove backend file %s' %backendFile)
 			return False
 		else:
-			return True			
+			return True
 		
 	def uninstallPharosPopupServer(self):
 		"""

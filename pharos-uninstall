@@ -63,7 +63,7 @@ fh = logging.FileHandler(logFile)
 fh.setLevel(logging.DEBUG)
 # create console handler
 ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
+ch.setLevel(logging.WARN)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 ch.setFormatter(formatter)
@@ -79,20 +79,20 @@ if os.path.exists(uninstallerSharedLibraryDIR):
 try:	
 	from printerutils import PrinterUtility
 except:
-	logger.error('Cannot import module printerutil from current directory')	
+	logger.error('Cannot import module printerutil')	
 	sys.exit(1)
 
 try:	
 	from processutils import ProcessUtility
 except:
-	logger.error('Cannot import module processutil from current directory')	
+	logger.error('Cannot import module processutil')	
 	sys.exit(1)
 
 try:	
 	from pharosuninstall import PharosUninstaller
 except:
 	logger.error('Cannot import module printerutil')
-	sys.exit(0)
+	sys.exit(1)
 
 printerUtility = PrinterUtility(logger)
 processUtility = ProcessUtility(logger)
