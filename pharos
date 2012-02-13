@@ -43,6 +43,7 @@ import logging
 import logging.config
 import tempfile
 import subprocess
+import re
 
 # CUPS backend return codes =========================
 CUPS_BACKEND_OK = 0
@@ -109,6 +110,7 @@ def main():
 	logger.info('User ID received = %s' %printjobparams["userid"])
 	logger.info('Print Command received = %s' %printjobparams["printjob"])
 	
+	# Calculate actual LPD queue DEVICE URI
 	logger.info('Processing DEVICE_URI')
 	deviceURI = os.environ['DEVICE_URI']	
 	devParts = deviceURI.split(':')[1].split('/')
@@ -137,18 +139,15 @@ def main():
 		printFileHndl.close()
 
 	# check if continue printing
-        if printjobparams["printjob"] == "yes":
-                logger.info("Printing Job")
-        else:
-                logger.info("User chose to cancel job. Exiting")
+	if not printjobparams["printjob"] == "yes":		
+		logger.info("User chose to cancel job. Exiting")
 		if os.path.exists(printFile):
 			os.unlink(printFile)
-                sys.exit(CUPS_BACKEND_CANCEL)
+		sys.exit(CUPS_BACKEND_CANCEL)
 
-	logger.info('Job Arguments (Job ID: %s, User Name: %s, Job Title: %s, Copies: %s, Print Options: %s, Print File: %s)' %(jobID,  userName,  jobTitle,  copies,  printOptions,  printFile))
-
+	logger.info('Job Arguments (Job ID: %s, User Name: %s, Job Title: %s, Copies: %s, Print Options: %s, Print File: %s)' %(jobID,  userName,  jobTitle,  copies,  printOptions,  printFile))	
 	command = [os.path.join(cupsBackendDIR, 'lpd'), jobID,  printjobparams["userid"],  jobTitle,  copies,  printOptions,  printFile]
-	logger.info("Running Command with arguments: " + "|".join(command))
+	logger.info("Running Command with pipe separated arguments: " + "|".join(command))
 	returnCode = subprocess.call(command)
 	logger.info('Command return code = %d' %(returnCode))
 	
@@ -156,6 +155,10 @@ def main():
 	if os.path.exists(printFile):
 		os.remove(printFile)
 		logger.info('Successfully removed print file: %s' %(printFile))
+	
+	# Terminate gracefully
+	logger.info('Printing completed')
+	sys.exit(CUPS_BACKEND_OK)
 
 # Main Script ========================================
 try:

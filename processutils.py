@@ -33,7 +33,7 @@ class ProcessUtility:
 		try:
 			ps = subprocess.check_output(['ps', 'ax'])
 		except CalledProcessError as (errCode, errMessage):
-			self.logger.error('Could not get list of running processes')	
+			self.logger.error('Could not get list of running processes')
 			self.logger.error('Error: %s Message: %s' %(errCode, errMessage))
 			return False
 			
@@ -51,12 +51,12 @@ class ProcessUtility:
 			self.logger.warn('%s is not running.' %processName)
 			return False
 		
-	def killProcess(self, process):
+	def killProcess(self, processName):
 		"""
 		kills a running process with given name
 		"""
-		self.logger.info('Trying to kill %s' %process)
-		process = subprocess.Popen(["pgrep", process], stdout=subprocess.PIPE)
+		self.logger.info('Trying to kill %s' %processName)
+		process = subprocess.Popen(["pgrep", processName], stdout=subprocess.PIPE)
 		for pid in process.stdout:
 			self.logger.info('Trying to kill process with PID %s' %pid)
 			os.kill(int(pid), signal.SIGTERM)
@@ -64,11 +64,11 @@ class ProcessUtility:
 			try:
 				os.kill(int(pid), 0)
 			except:
-				self.logger.warn('Could not kill process %s' %process)
+				self.logger.warn('Could not kill process %s' %processName)
 				
-		if self.isProcessRunning(process):
-			self.logger.warn('Process %s could not be killed' %process)
+		if self.isProcessRunning(processName):
+			self.logger.warn('Process %s could not be killed' %processName)
 			return False
 		else:
-			self.logger.info('Successfully killed process %s' %process)
+			self.logger.info('Successfully killed process %s' %processName)
 			return True
