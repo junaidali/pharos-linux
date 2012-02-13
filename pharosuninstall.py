@@ -202,8 +202,49 @@ class PharosUninstaller:
 		"""
 		Removes the popup server from KDE session manager
 		"""
-		self.logger.warn('function removePopupServerFromKDESession() not implemented')
-		return False
+		self.logger.info('Removing popup server from KDE session manager')
+		removedAllAutoStartFiles = True
+		
+		# Delete file from all users
+		self.logger.info('Getting list of current users')
+		currentUsers = os.listdir('/home')	
+		for user in currentUsers:
+			self.logger.info('Checking autostart file for user %s' %user)
+			pharosAutoStartFile = os.path.join('/home', user, '.kde', 'Autostart', 'pharospopup')
+			if os.path.exists(pharosAutoStartFile):
+				self.logger.info('Autostart file %s found. Trying to delete it' %pharosAutoStartFile)
+				try:
+					os.unlink(pharosAutoStartFile)
+					self.logger.info('Sucessfully removed file %s' %pharosAutoStartFile)
+				except:
+					self.logger.warn('Could not delete file %s' %pharosAutoStartFile)
+					removedAllAutoStartFiles = False					
+		
+		# Delete file from root user
+		rootAutoStartFile = os.path.join('/root', '.kde', 'Autostart', 'pharospopup')
+		self.logger.info('Checking autostart file for root')
+		if os.path.exists(rootAutoStartFile):
+			self.logger.info('Trying to delete autostart file %s' %rootAutoStartFile)
+			try:
+				os.unlink(rootAutoStartFile)
+				self.logger.info('Sucessfully removed file %s' %rootAutoStartFile)
+			except:
+				self.logger.warn('Could not delete file %s' %rootAutoStartFile)
+				removedAllAutoStartFiles = False
+		
+		# Delete from future users
+		skelAutoStartFile = os.path.join('/etc/skel', '.kde', 'Autostart', 'pharospopup')
+		self.logger.info('Checking autostart file for future users')
+		if os.path.exists(skelAutoStartFile):
+			self.logger.info('Trying to delete autostart file %s' %skelAutoStartFile)
+			try:
+				os.unlink(skelAutoStartFile)
+				self.logger.info('Sucessfully removed file %s' %skelAutoStartFile)
+			except:
+				self.logger.warn('Could not delete file %s' %skelAutoStartFile)
+				removedAllAutoStartFiles = False
+			
+		return removedAllAutoStartFiles		
 			
 	def uninstallStartupEntries(self):
 		"""
