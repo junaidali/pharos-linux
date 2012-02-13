@@ -19,7 +19,8 @@ printers=Linux_Laser, Linux_Color
 Make=HP
 Model=HP LaserJet 9040
 Driver=HP LaserJet 9040 pcl3, hpcups
-Duplex=Yes
+DuplexerInstalled=Yes
+DefaultDuplex=No
 LPDServer=printserver.university.edu
 LPDQueue=Linux_Laser_Printer
 Location=University Campus at City Name
@@ -29,7 +30,8 @@ Description=University Any Building Black and White Printer
 Make=HP
 Model=HP Color LaserJet 5550
 Driver=HP Color LaserJet 5550 pcl3, hpcups
-Duplex=Yes
+DuplexerInstalled=Yes
+DefaultDuplex=Yes
 LPDServer=printserver.university.edu
 LPDQueue=Linux_Color_Printer
 Location=University Campus at City Name
@@ -40,7 +42,9 @@ The above configuration file is divided into two parts. The first part is [Print
 The printer configuration consists of the following parts:
 	Make: This is the manufacturer of the printer.
 	Model: This is the exact model of the printer. This is information used to search for available drivers on the system during the installation process.
-	Model: This is the exact model of the printer. This is information used to search for available drivers on the system during the installation process. If the driver is not available on the system the printer will not be installed.
+	Driver: This is the exact driver of the printer. If driver version is not specified then the closest available driver will be used. This is information used to search for available drivers on the system during the installation process. If the driver is not available on the system the printer will not be installed.
+	DuplexerInstalled: This option is currently designed to work with HP drivers. It enables the duplexing unit for the print queue.
+	DefaultDuplex: This will enable all jobs to print as duplex. Please make sure to check the charging for simplex jobs as this option tends to cause the page counter to miscount single page jobs as two sheets.
 	LPDServer: This is the pharos print server address (DNS hostname or IP Address)
 	LPDQueue: This is the pharos print server queue name that the job will be printed to. Make sure that it does not include any spaces. Also this queue should be setup as a "Held" queue within pharos and "Must use popups" property should be set to "No"
 	Location: This is a string describing the location of the printer
