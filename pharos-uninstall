@@ -106,6 +106,7 @@ if __name__ == "__main__":
 			logger.info('Running cleanup file %s' %cleanupFile)
 			try:
 				pid = subprocess.Popen([cleanupFile], shell=False, stdin=None, stdout=None, stderr=None)
+				print('Successfully completed uninstallation!')
 			except:
 				logger.warn('could not run cleanup command. manually remove the uninstaller file')
 	else:
