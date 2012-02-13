@@ -2,8 +2,26 @@ README
 =====
 This program provides a linux equivalent of the Pharos Remote Printing Package available for Windows and Macintosh clients. This package will install a new CUPS backend that will allow printing to lpd queues on the pharos uniprint print server. Also it will install a new pharos popup server that will allow for users to input their printing ID's to be tied with the print jobs they send. This will allow the users to use their printing ID's to release the print jobs at the pharos release stations.
 
+PRE-REQUISITES
+==============
+1. CUPS printing system
+	Most linux distributions use CUPS printing by default. To check if CUPS is running open a web browser and go to http://localhost:631
+	This should launch the CUPS printing interface.
+	
+2. wxPython library
+	This python library is required to display popups used for printing to pharos printing queues.
+	To verify if wxpython is installed
+	a. Open terminal
+	b. Run python interactive shell
+	   >python
+	c. Try to import the wxpython module
+	   >>import wxpython
+	d. If you do not get any error message, then wxpython is installed.
+
 INSTALLATION
 ============
+Make sure you have the following pre-requisites installed before proceeding with the installation.
+
 To install pharos remote printing open terminal and go to this package directory. Run the setup.py file as administrator user
 # sudo python setup.py
 

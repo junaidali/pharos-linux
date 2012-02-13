@@ -214,7 +214,78 @@ def addPopupServerToKDESession():
 	"""
 	Adds autostart option for KDE desktops
 	"""
-	logger.error('addPopupServerToKDESession() not implemented')
+	returnCode = True
+	popupExecutablePath = os.path.join(popupServerInstallDIR, pharosPopupServerFileName)
+	logger.info('Adding autostart file for KDE')
+	logger.info('Getting list of current users')
+	
+	currentUsers = os.listdir('/home')	
+	for user in currentUsers:
+		logger.info('Adding autostart file to user %s' %user)
+		autoStartDIR = os.path.join('/home', user, '.kde', 'Autostart')
+		logger.info('Checking if directory %s exists' %autoStartDIR)
+		if not os.path.exists(autoStartDIR):
+			logger.info('Creating autostart directory %s' %autoStartDIR)
+			os.makedirs(autoStartDIR)			
+		else:
+			logger.info('Autostart directory %s already exists' %autoStartDIR)
+		
+		if os.path.exists(autoStartDIR):			
+			autoStartFile = os.path.join(autoStartDIR, 'pharospopup')
+			# Delete old file if it exists
+			if os.path.exists(autoStartFile):
+				logger.info('Deleted old version of autostart file: %s' %autoStartFile)
+				os.remove(autoStartFile)
+			# create new link
+			lnCommand = ['ln', '-s', popupExecutablePath, autoStartFile]
+			logger.info('Creating autostart file using command %s' %lnCommand)
+			try:
+				subprocess.call(lnCommand)
+				logger.info('Successfully added autostart for %s user' %user)
+			except subprocess.CalledProcessError:
+				logger.error('Could not create autostart file for user %s' %user)
+				returnCode = False
+		else:
+			logger.warn('Autostart file %s could not be created' %autoStartFile)
+	
+	# Create autostart file for root
+	rootAutoStartDIR = os.path.join('/root', '.kde', 'Autostart')
+	rootAutoStartFile = os.path.join(rootAutoStartDIR, 'pharospopup')
+	logger.info('Adding autostart file for root')
+	if not os.path.exists(rootAutoStartDIR):
+		logger.info('Creating autostart directory %s' %rootAutoStartDIR)
+		os.makedirs(rootAutoStartDIR)			
+	else:
+		logger.info('Autostart directory %s already exists' %rootAutoStartDIR)
+	
+	lnCommand = ['ln', '-s', popupExecutablePath, rootAutoStartFile]
+	logger.info('Creating autostart file using command %s' %lnCommand)
+	try:
+		subprocess.call(lnCommand)
+		logger.info('Successfully added autostart for root user')
+	except subprocess.CalledProcessError:
+		logger.error('Could not create autostart file for root user')
+		returnCode = False
+	
+	# Create autostart file for future users
+	futureUsersAutoStartDIR = os.path.join('/etc/skel', '.kde', 'Autostart')
+	futureUsersAutoStartFile = os.path.join(futureUsersAutoStartDIR, 'pharospopup')
+	if not os.path.exists(futureUsersAutoStartDIR):
+		logger.info('Creating autostart directory %s' %futureUsersAutoStartDIR)
+		os.makedirs(futureUsersAutoStartDIR)			
+	else:
+		logger.info('Autostart directory %s already exists' %futureUsersAutoStartDIR)		
+	
+	lnCommand = ['ln', '-s', popupExecutablePath, futureUsersAutoStartFile]
+	logger.info('Creating autostart file using command %s' %lnCommand)
+	try:
+		subprocess.call(lnCommand)
+		logger.info('Successfully added autostart for future users')
+	except subprocess.CalledProcessError:
+		logger.error('Could not create autostart file for future users')
+		returnCode = False
+	
+	return returnCode
 	
 def addPopupServerToLogin():
 	""""
@@ -224,7 +295,7 @@ def addPopupServerToLogin():
 	logger.info('Analyzing desktop environment')
 	if processUtils.isProcessRunning('gnome'):
 		logger.info('User is using gnome window manager')
-		addPopupServerToGnomeSession()
+		addPopupServerToGnomeSession()		
 	elif processUtils.isProcessRunning('kde'):
 		logger.info('User is using kde Window Manager')
 		addPopupServerToKDESession()
