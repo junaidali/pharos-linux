@@ -26,8 +26,7 @@ class PrinterUtility:
 	def printerExists(self, printer):
 		"""
 		Checks if the given printer device exists
-		"""
-		self.logger.info('Deleting printer')
+		"""		
 		self.logger.info('Checking if printer %s exists' %printer)
 		printerExistsCommand = ['lpoptions', '-d', printer]
 		
@@ -170,25 +169,38 @@ class PrinterUtility:
 				self.logger.error('Could not add printer using lpadmin')
 			
 			# Enable Duplex if needed
-			if printer.has_key('duplex'):
-				if printer['duplex'] == 'yes' or printer['duplex'] == 'Yes' or printer['duplex'] == 'YES':
-					self.logger.info('Enabling duplex printing for printer %s' %printer['printqueue'])
-					
-					if printer.has_key('make'):
-						if printer['make'] == 'hp' or printer['make'] == 'HP' or printer['make'] == 'Hp' or printer['make'] == 'hP':
-							self.logger.info('Processing duplex printing for HP printer')
-							if self.enableDuplexPrintingForHPPrinter(printer['printqueue']):
-								self.logger.info('Successfully enabled duplexing for printer %s' %printer['printqueue'])
+			if printer.has_key('duplexerinstalled'):
+				# check if HP printer
+				if printer.has_key('make'):
+					if printer['make'] in ['hp', 'HP', 'Hp', 'hP']:
+						self.logger.info('Processing duplex printing for HP printer')						
+						if printer['duplexerinstalled'] in ['yes', 'Yes', 'yEs', 'yeS', 'YEs', 'yES', 'YES']:
+							if self.setDuplexerForHPPrinter(printer['printqueue']):
+								self.logger.info('successfully set duplexer for hp printer %s' %printer['printqueue'])
 							else:
-								self.logger.warn('Could not enable duplexing for printer %s' %printer['printqueue'])
-						
-					if self.enableDuplexPrinting(printer['printqueue']):
+								self.logger.error('Could not set duplexer for hp printer %s' %printer['printqueue'])
+					else:
+						self.logger.info('Printer make %s is not special case. Will only process defaultduplex setting' %printer['make'])
+				else:
+					self.logger.warn('Printer Make is not specified. Will only process defaultduplex setting')
+				
+			# Default Duplex Printing
+			if printer.has_key('defaultduplex'):
+				if printer['defaultduplex'] in ['yes', 'Yes', 'yEs', 'yeS', 'YEs', 'yES', 'YES']:
+					# check if HP printer
+					if printer.has_key('make'):
+						if printer['make'] in ['hp', 'HP', 'Hp', 'hP']:
+							self.logger.info('Setting default duplex printing for HP printer %s' %printer['printqueue'])
+							if self.setDefaultDuplexPrintingForHPPrinter(printer['printqueue']):
+								self.logger.info('successfully set default duplex printing for hp printer %s' %printer['printqueue'])
+							else:
+								self.logger.error('Could not set default duplex printing for hp printer %s' %printer['printqueue'])
+					
+					if self.setDefaultDuplexPrinting(printer['printqueue']):
 						self.logger.info('Successfully enabled duplexing for printer %s' %printer['printqueue'])
 					else:
 						self.logger.warn('Could not enable duplexing for printer %s' %printer['printqueue'])
-				else:
-					self.logger.info('No need to enable duplexer for printer %s' %printer['printqueue'])
-							
+			
 			# Enable Printer
 			if self.enablePrinter(printer['printqueue']):
 				self.logger.info('Successfully enabled printer %s' %printer['printqueue'])
@@ -256,7 +268,53 @@ class PrinterUtility:
 		else:
 			self.logger.warn('The option %s has been incorrectly setup to %s for printer %s' %(option, currentValue, printer))
 	
-	def enableDuplexPrintingForHPPrinter(self, printer):
+	def setDuplexerForHPPrinter(self, printer):
+		"""
+		Enables the Duplexing unit for the HP printer
+		"""
+		self.logger.info('Enabling duplex unit for HP printer %s' %printer)
+		
+		# Update the driver ppd
+		ppdFile = os.path.join('/etc/cups/ppd', printer + '.ppd')
+		newppdFile = tempfile.NamedTemporaryFile(delete=False)
+		
+		self.logger.info('Checking if ppd file %s exists' %ppdFile)
+		if os.path.exists(ppdFile):
+			self.logger.info('ppd file %s exists' %ppdFile)
+			ppd = open(ppdFile, 'r')
+			for line in ppd:				
+				if line.startswith("*DefaultOptionDuplex: False", 0, len("*DefaultOptionDuplex: False")):
+					newppdFile.writelines('*DefaultOptionDuplex: True\n')
+				else:
+					newppdFile.writelines(line)
+			newppdFile.close()
+			ppd.close()
+			self.logger.info('successfully created file %s' %newppdFile.name)
+			try:				
+				shutil.copy(newppdFile.name, ppdFile)
+				self.logger.info('Successfully copied the modified ppd file to %s' %ppdFile)
+				
+				# update permission on new file
+				if os.path.exists(ppdFile):
+					self.logger.info('Updating permissions on file %s' %ppdFile)
+					try:
+						chmod = subprocess.call(['chmod', '644', ppdFile])
+					except subprocess.CalledProcessError:
+						self.logger.error('Could not change permission for file %s' %ppdFile)				
+					
+				# delete temp file
+				os.remove(newppdFile.name)
+				self.logger.info('Successfully deleted file %s' %newppdFile)
+			except IOError as (errCode, errMessage):
+				logger.error('Could not copy file %s to %s' %(newppdFile.name, ppdFile))	
+				logger.error('Error: %s Message: %s' %(errCode, errMessage))			
+		else:
+			self.logger.warn('ppd file %s does not exists' %ppdFile)
+		
+		self.logger.info('Successfully enabled duplex unit for printer %s' %printer)
+		return True		
+		
+	def setDefaultDuplexPrintingForHPPrinter(self, printer):
 		"""
 		Enables duplexing for HP printer
 		"""
@@ -304,11 +362,11 @@ class PrinterUtility:
 		self.logger.info('Successfully enabled duplexing for printer %s' %printer)
 		return True
 			
-	def enableDuplexPrinting(self, printer):
+	def setDefaultDuplexPrinting(self, printer):
 		"""
 		Enables default duplex printing
 		"""
-		self.logger.info('Enabling duplex printing for printer %s' %printer)
+		self.logger.info('Setting default duplex printing for printer %s' %printer)
 		
 		enableDuplexCommand = ['lpoptions', '-p', printer, '-o', 'duplex=DuplexNoTumble']
 		self.logger.info('Enabling duplex printing for printer %s using command %s' %(printer, enableDuplexCommand))
@@ -318,7 +376,7 @@ class PrinterUtility:
 			self.logger.error('Could not enable duplexing for printer %s' %printer)		
 			return False
 		
-		self.logger.info('Successfully enabled duplexing for printer %s' %printer)
+		self.logger.info('Successfully set default duplexing for printer %s' %printer)
 		return True
 	
 	def getAllPrinters(self):
