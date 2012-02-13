@@ -17,6 +17,8 @@ PRE-REQUISITES
 	c. Try to import the wxpython module
 	   >>import wxpython
 	d. If you do not get any error message, then wxpython is installed.
+	
+On systems with selinux enabled (Red Hat and derivatives). you will need to disable selinux or setup policies in order for the popup application to work correctly. Please refer to the corresponding systems administration guide to disable selinux.
 
 INSTALLATION
 ============
