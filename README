@@ -37,3 +37,4 @@ UNINSTALLATION
 The installer will add an uninstallation program to /usr/local/bin/pharos-uninstall
 To uninstall run the uninstaller as an administrative user
 # sudo python /usr/local/bin/pharos-uninstall
+If you receive any error message you can try to re-run the uninstall command
