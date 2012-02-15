@@ -115,7 +115,7 @@ class PharosUninstaller:
 				self.logger.info('Popup server was successfully terminated')
 			else:
 				self.logger.error('Popup server could not be terminated. Popup server files will not be removed')
-				return False				
+				return False		
 		else:
 			self.logger.info('Popup server is not running')
 		

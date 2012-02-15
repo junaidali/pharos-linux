@@ -329,7 +329,7 @@ def installPrintQueuesUsingConfigFile():
 			if (printerUtility.installPrintQueue(printerPropertiesDictionary)):
 				logger.info('Successfully installed printer %s' %printer)
 			else:
-				logger.error('Could not install printer %s' %printer)
+				logger.warn('Could not install printer %s as driver is missing' %printer)
 		else:
 			logger.error('Printer %s is not defined in config file. Cannot install it' %printer)
 	
@@ -450,6 +450,53 @@ def acceptEULA(eulaFile):
 	else:
 		logger.warn('User did not accept the EULA')
 		return False
+
+def checkDrivers():
+	"""
+	Checks if the system has all the drivers specified in the printers.conf file
+	"""
+	logger.info('Checking if all the drivers used in %s are installed on the system' %printersConfigFile)
+	if os.path.exists(printersConfigFile):
+		config = ConfigParser.RawConfigParser()
+		config.read(printersConfigFile)
+		printersList = config.get('Printers','printers')
+		logger.info('Printers list = %s' %printersList)
+		printers = printersList.split(',')
+		logger.info('Checking drivers for total %d printers' %len(printers))
+		driverStatus = {}
+		for printer in printers:
+			printer = printer.strip()
+			driverStatus[printer] = False
+			logger.info('Checking printer %s' %printer)			
+			# Verfiy section
+			if config.has_section(printer):
+				logger.info('Printer %s is defined in config file' %printer)
+				printerModel = config.get(printer, 'model')
+				printerDriver = config.get(printer, 'driver')
+				if printerUtility.isDriverInstalled(printerModel, printerDriver):
+					logger.info('Driver <%s> is installed on the system ' %printerDriver)
+					driverStatus[printer] = True
+				else:
+					logger.error('Driver <%s> is not installed on the system ' %printerDriver)				
+			else:
+				logger.error('Printer %s is not defined in config file. Cannot install it' %printer)
+		# Evaluate Driver Status
+		print('Driver Status:\t')
+		for driver in driverStatus.keys():
+			if driverStatus[driver]:
+				print('Driver for printer %s is installed' %driver)
+			else:
+				print('Driver for printer %s is not installed\nIf you wish to continue printer %s will not be available' %(driver, driver))
+				userChoice = raw_input('\nDo you wish to continue (y/n)?:   ')
+				if userChoice in ['y', 'Y', 'yes', 'Yes', 'yEs', 'yeS', 'YEs', 'yES', 'YES']:
+					logger.info('User chose to continue without driver %s' %driver)				
+				else:
+					print('Installation aborted because of missing driver for printer %s\nInstall the driver and then run setup again!' %driver)
+					logger.warn('User chose to quit setup. Exiting')
+					uninstallAndExit()		
+	else:
+		print('Printer Definition file %s does not exists. Exiting installation' %printersConfigFile)
+		uninstallAndExit()		
 	
 def main():
 	"""
@@ -462,28 +509,36 @@ def main():
 		if not acceptEULA(os.path.join(os.getcwd(), 'EULA')):
 			uninstallAndExit()
 	
-	print('Checking for pre-requisites')
 	# check prerequisites
+	print('Checking for pre-requisites')	
 	checkPreReqs()
-	print('Installing backend')
+	
+	# Check if all drivers are available
+	print('Checking for drivers')
+	checkDrivers()
+	
 	# Install backend
+	print('Installing backend')	
 	installBackend()
-	print('Installing Popup server')
+	
 	# Install popup server files
+	print('Installing Popup server')	
 	installPopupServer()
-	print('Adding popup server to login')
+	
 	# Setup Popup server to run at login
+	print('Adding popup server to login')	
 	addPopupServerToLogin()
-	print('Setting up log directories')
+	
 	# Setup Log Directories
+	print('Setting up log directories')	
 	setupLoggingDirectories()
 	
-	print('Installing printer queues')
 	# Setup Print Queues
+	print('Installing printer queues')	
 	installPrintQueuesUsingConfigFile()
 	
-	print('Adding uninstaller')
 	# Install Uninstaller
+	print('Adding uninstaller')	
 	installUninstaller()
 	
 	print('\nIIT Remote printing has been successfully installed on your computer. Please restart your GUI session to complete the installation process. The simplest way to do this is to log out and log back in!')

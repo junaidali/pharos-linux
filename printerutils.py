@@ -99,45 +99,14 @@ class PrinterUtility:
 		if printer['driver'] == None or printer['model'] == None or printer['lpdserver'] == None or  printer['lpdqueue'] == None:
 			self.logger.error('One of the required parameters (driver, model, lpdserver, lpdqueue) is missing. Cannot add printer')
 			return False		
-		
-		# Check if driver is specified
-		if printer['driver'] != None:
-			self.logger.info('Printer driver <%s> is defined' %printer['driver'])
-			self.logger.info('Fixing Printer driver name')
-			if re.search('\(|\)', printer['driver']):
-				self.logger.info('Printer Driver name <%s> contains brackets' %printer['driver'])
-				printer['driver'] = re.sub('\(', '\(', printer['driver'])
-				printer['driver'] = re.sub('\)', '\)', printer['driver'])
-				self.logger.info('Printer driver after fixing brackets: %s' %printer['driver'])
-		
+				
 		# Query for driver using make and model
 		printerDriverPath = ''
-		driverFound = False		
-		if printer['model'] != None:
-			self.logger.info('Printer model <%s> is defined. Now searching for driver' %printer['model'])
-			try:
-				lpinfo = subprocess.check_output(['lpinfo', '--make-and-model',printer['model'], '-m'])			
-			except subprocess.CalledProcessError:
-				self.logger.error('Could not get printer driver details using lpinfo')		
-				return False			
-			# Process results of lpinfo
-			driversList = lpinfo.split('\n')
-			self.logger.info('Total %d drivers returned for <%s> make and model' %(len(driversList), printer['model']))		
-			for driver in driversList:
-				driverPath = driver.split(' ')[0]
-				driverName = driver.lstrip(driverPath)
-				# remove white spaces if any
-				driverPath = driverPath.strip()
-				driverName = driverName.strip()
-				if driverName != '':
-					self.logger.info('checking if driver <%s> matches <%s>' %(driverName, printer['driver']))
-					if re.search(printer['driver'], driverName):
-						self.logger.info('Driver matches')
-						driverFound = True
-						printerDriverPath = driverPath
-						break
-					else:
-						self.logger.info('Driver does not match')
+		driverFound = False
+		if printer['model'] != None:		
+			printerDriverPath = self.isDriverInstalled(printer['model'], printer['driver'])
+			if printerDriverPath  != '':
+				driverFound = True				
 		
 		if driverFound:
 			# Check if printer already exists.
@@ -215,7 +184,7 @@ class PrinterUtility:
 				return False		
 			
 		else:
-			self.logger.error('Could not find the required driver installed on the system. Cannot install printer')
+			self.logger.info('Could not find the required driver installed on the system. Cannot install printer')
 			return False		
 
 	def queryPrinterOption(self, printer, option='all'):
@@ -404,3 +373,49 @@ class PrinterUtility:
 				allPrinters[printer] = self.queryPrinterOption(printer, option='all')
 		self.logger.info('All printer = %s' %allPrinters)
 		return allPrinters
+	
+	def isDriverInstalled(self, printerModel, printerDriver):
+		"""
+		Checks if the given driver for the given printer model is installed on the system
+		Returns the printerDriverPath
+		"""
+		printerDriverPath = ''
+		self.logger.info('Checking if driver %s is installed on the system for model %s' %(printerDriver, printerModel))
+		
+		# Fix Driver Name
+		if printerDriver != None:
+			self.logger.info('Printer driver <%s> is defined for printer model %s' %(printerDriver, printerModel))
+			self.logger.info('Fixing Printer driver name')
+			if re.search('\(|\)', printerDriver):
+				self.logger.info('Printer Driver name <%s> contains brackets' %printerDriver)
+				printerDriver = re.sub('\(', '\(', printerDriver)
+				printerDriver = re.sub('\)', '\)', printerDriver)
+				self.logger.info('Printer driver after fixing brackets: %s' %printerDriver)
+		
+		try:
+			lpinfo = subprocess.check_output(['lpinfo', '--make-and-model', printerModel, '-m'])
+		except subprocess.CalledProcessError:
+			self.logger.error('Could not get printer driver details using lpinfo')		
+			return printerDriverPath
+			
+		# Process results of lpinfo
+		driversList = lpinfo.split('\n')
+		self.logger.info('Total %d drivers returned for <%s> make and model' %(len(driversList), printerModel))
+		for driver in driversList:
+			driverPath = driver.split(' ')[0]
+			driverName = driver.lstrip(driverPath)
+			# remove white spaces if any
+			driverPath = driverPath.strip()
+			driverName = driverName.strip()
+			if driverName != '':
+				self.logger.info('checking if driver <%s> matches <%s>' %(driverName, printerDriver))
+				if re.search(printerDriver, driverName):
+					self.logger.info('Driver matches')
+					driverFound = True
+					printerDriverPath = driverPath
+					break
+				else:
+					self.logger.info('Driver %s does not match' %driverName)
+		
+		self.logger.info('Returing driver path %s' %printerDriverPath)
+		return printerDriverPath
