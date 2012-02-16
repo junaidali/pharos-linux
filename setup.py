@@ -480,6 +480,17 @@ def checkDrivers():
 					logger.error('Driver <%s> is not installed on the system ' %printerDriver)				
 			else:
 				logger.error('Printer %s is not defined in config file. Cannot install it' %printer)
+			
+		# If all drivers are not available exit
+		atleastOneDriverIsInstalled = False
+		for driver in driverStatus.keys():
+			if driverStatus[driver]:
+				atleastOneDriverIsInstalled = True
+		
+		if not atleastOneDriverIsInstalled:
+			logger.error('None of the required drivers are available on the system (refer log file %s for details). Please install all the drivers required before proceeding.' %logFile)
+			uninstallAndExit()
+		
 		# Evaluate Driver Status
 		print('Driver Status:\t')
 		for driver in driverStatus.keys():
