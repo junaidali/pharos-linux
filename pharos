@@ -156,9 +156,9 @@ def main():
 		os.remove(printFile)
 		logger.info('Successfully removed print file: %s' %(printFile))
 	
-	# Terminate gracefully
+	# Terminate gracefully and return the code from lpd printing
 	logger.info('Printing completed')
-	sys.exit(CUPS_BACKEND_OK)
+	sys.exit(returnCode)
 
 # Main Script ========================================
 try:
