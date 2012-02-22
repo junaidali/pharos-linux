@@ -15,6 +15,7 @@ import subprocess
 import re
 import os
 import signal
+import time
 
 # Class definitions =====================
 class ProcessUtility:
@@ -48,7 +49,7 @@ class ProcessUtility:
 			self.logger.info('%s is running.' %processName)
 			return True
 		else:
-			self.logger.warn('%s is not running.' %processName)
+			self.logger.info('%s is not running.' %processName)
 			return False
 		
 	def killProcess(self, processName):
@@ -59,13 +60,11 @@ class ProcessUtility:
 		process = subprocess.Popen(["pgrep", processName], stdout=subprocess.PIPE)
 		for pid in process.stdout:
 			self.logger.info('Trying to kill process with PID %s' %pid)
-			os.kill(int(pid), signal.SIGTERM)
-			# check if process was killed
-			try:
-				os.kill(int(pid), 0)
-			except:
-				self.logger.warn('Could not kill process %s' %processName)
-				
+			os.kill(int(pid), signal.SIGTERM)			
+			self.logger.info('Waiting for 5 seconds after sending Terminate signal to process PID %s' %pid)
+			# Sleep for 5 seconds
+			time.sleep(5)
+			
 		if self.isProcessRunning(processName):
 			self.logger.warn('Process %s could not be killed' %processName)
 			return False
