@@ -254,6 +254,8 @@ class PrinterUtility:
 			for line in ppd:				
 				if line.startswith("*DefaultOptionDuplex: False", 0, len("*DefaultOptionDuplex: False")):
 					newppdFile.writelines('*DefaultOptionDuplex: True\n')
+				elif line.startswith("*cupsEvenDuplex: True", 0, len("*cupsEvenDuplex: True")):
+					newppdFile.writelines('*cupsEvenDuplex: False\n')
 				else:
 					newppdFile.writelines(line)
 			newppdFile.close()
