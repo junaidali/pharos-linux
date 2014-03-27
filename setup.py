@@ -65,7 +65,7 @@ def checkPreReqs():
 	# Check wxPython	
 	logger.info('checking if wxPython is available')
 	try:
-		import wxPython
+		import wx
 	except:
 		logger.error('wxPython is not installed. Please make sure wxPython is installed before proceeding')
 		uninstallAndExit()
