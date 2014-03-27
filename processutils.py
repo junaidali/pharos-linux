@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Script Name: processutils.py
 # Script Function:
 #	This script provides utility functions for dealing with processes

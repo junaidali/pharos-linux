@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Script Name: pharos
 # Script Function:
 #	This is a CUPS backend for the Pharos Remote Printing LPD Server.

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Script Name: setup.py
 # Script Function:
 #	This script will install pharos remote printing on the system.
