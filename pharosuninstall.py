@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # Script Name: uninstall-pharos.py
 # Script Function:
 #	This script will uninstall pharos remote printing from the system.
