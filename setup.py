@@ -75,7 +75,7 @@ def installBackend():
 	"""
 	Install the pharos backend
 	"""
-	backendDIR = '/usr/libexec/cups/backend'
+	backendDIR = '/usr/lib/cups/backend'
 	backendFile = os.path.join(os.getcwd(), pharosBackendFileName)
 	
 	logger.info('Checking for CUPS backend directory %s' %backendDIR)
