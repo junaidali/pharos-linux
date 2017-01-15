@@ -3,7 +3,7 @@
 # Script Function:
 #	This is a CUPS backend for the Pharos Remote Printing LPD Server.
 # Save this file in your CUPS backend directory, usually
-# /usr/lib/cups/backend/ or /usr/local/lib/cups/backend/
+# /usr/lib/cups/backend/ or /usr/local/lib/cups/backend/ or /usr/libexec/cups/backend/
 #
 # Mark this filter world-readable and world-executable. Restart CUPS to
 # make the new backend known to the spooler.
@@ -56,6 +56,9 @@ CUPS_BACKEND_CANCEL = 5
 # Script Variables ===================================
 programConfigFilePath = '/usr/local/etc/pharos.conf'
 cupsBackendDIR = '/usr/lib/cups/backend'
+
+if not os.path.isdir(cupsBackendDIR):
+        cupsBackendDIR = '/usr/libexec/cups/backend'
 
 # Function Declaration ===============================
 def main():
