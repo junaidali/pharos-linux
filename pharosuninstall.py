@@ -86,6 +86,10 @@ class PharosUninstaller:
 		"""
 		self.logger.info('Uninstalling pharos backend')
 		backendDIR = '/usr/lib/cups/backend'
+
+                if not os.path.isdir(backendDIR):
+                        backendDIR = '/usr/libexec/cups/backend'
+
 		backendFile = os.path.join(backendDIR, pharosBackendFileName)
 		if os.path.exists(backendFile):
 			self.logger.info('Backend file %s exists. Trying to remove it' %backendFile)

@@ -76,6 +76,10 @@ def installBackend():
 	Install the pharos backend
 	"""
 	backendDIR = '/usr/lib/cups/backend'
+
+        if not os.path.isdir(backendDIR):
+                backendDIR = '/usr/libexec/cups/backend'
+
 	backendFile = os.path.join(os.getcwd(), pharosBackendFileName)
 	
 	logger.info('Checking for CUPS backend directory %s' %backendDIR)
@@ -112,7 +116,7 @@ def installPopupServer():
 	"""
 	Installs the popup server files
 	"""
-	logger.info('Installing poup server files')
+	logger.info('Installing popup server files')
 	popupExecutable = os.path.join(os.getcwd(), pharosPopupServerFileName)
 	pharosConfig = os.path.join(os.getcwd(),pharosConfigFileName)
 	 
@@ -153,28 +157,33 @@ Comment=Pharos Popup Server
 	logger.info('Getting list of current users')
 	currentUsers = os.listdir('/home')	
 	for user in currentUsers:
-		logger.info('Adding autostart file to user %s' %user)
-		autoStartDIR = os.path.join('/home', user, '.config', 'autostart')
-		logger.info('Checking if directory %s exists' %autoStartDIR)
-		if not os.path.exists(autoStartDIR):
-			logger.info('Creating autostart directory %s' %autoStartDIR)
-			os.makedirs(autoStartDIR)			
-		else:
-			logger.info('Autostart directory %s already exists' %autoStartDIR)
+                # Avoid install failure when regular files exist within /home
+                if not os.path.isdir(os.path.join('/home', user)):
+                        continue
+                # Continue with installation
+                else:
+		        logger.info('Adding autostart file to user %s' %user)
+		        autoStartDIR = os.path.join('/home', user, '.config', 'autostart')
+		        logger.info('Checking if directory %s exists' %autoStartDIR)
+		        if not os.path.exists(autoStartDIR):
+			        logger.info('Creating autostart directory %s' %autoStartDIR)
+			        os.makedirs(autoStartDIR)			
+		        else:
+			        logger.info('Autostart directory %s already exists' %autoStartDIR)
 		
-		if os.path.exists(autoStartDIR):			
-			autoStartFile = os.path.join('/home', user, '.config', 'autostart', 'pharospopup.desktop')
-			# Delete old file if it exists
-			if os.path.exists(autoStartFile):
-				logger.info('Deleted old version of autostart file: %s' %autoStartFile)
-				os.remove(autoStartFile)
-			# create new file
-			autoStartFH = open(autoStartFile, 'w')
-			autoStartFH.write(gnomeAutoStartFile)
-			autoStartFH.close()
-			logger.info('Successfully added autostart for %s user' %user)
-		else:
-			logger.warn('Autostart file %s could not be created' %autoStartFile)
+		        if os.path.exists(autoStartDIR):			
+			        autoStartFile = os.path.join('/home', user, '.config', 'autostart', 'pharospopup.desktop')
+			        # Delete old file if it exists
+			        if os.path.exists(autoStartFile):
+				        logger.info('Deleted old version of autostart file: %s' %autoStartFile)
+				        os.remove(autoStartFile)
+			        # create new file
+			        autoStartFH = open(autoStartFile, 'w')
+			        autoStartFH.write(gnomeAutoStartFile)
+			        autoStartFH.close()
+			        logger.info('Successfully added autostart for %s user' %user)
+		        else:
+			        logger.warn('Autostart file %s could not be created' %autoStartFile)
 	
 	# Update the autostart file for root
 	logger.info('Updating autostart file for root')

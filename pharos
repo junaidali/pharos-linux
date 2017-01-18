@@ -3,7 +3,7 @@
 # Script Function:
 #	This is a CUPS backend for the Pharos Remote Printing LPD Server.
 # Save this file in your CUPS backend directory, usually
-# /usr/lib/cups/backend/ or /usr/local/lib/cups/backend/
+# /usr/lib/cups/backend/ or /usr/local/lib/cups/backend/ or /usr/libexec/cups/backend/
 #
 # Mark this filter world-readable and world-executable. Restart CUPS to
 # make the new backend known to the spooler.
@@ -57,6 +57,9 @@ CUPS_BACKEND_CANCEL = 5
 programConfigFilePath = '/usr/local/etc/pharos.conf'
 cupsBackendDIR = '/usr/lib/cups/backend'
 
+if not os.path.isdir(cupsBackendDIR):
+        cupsBackendDIR = '/usr/libexec/cups/backend'
+
 # Function Declaration ===============================
 def main():
 	"""
@@ -67,7 +70,7 @@ def main():
 		sys.stdout.write("network %s \"Unknown\" \"%s\" \n" %(os.path.basename(sys.argv[0]),  __doc__))
 		sys.stdout.flush()
 		sys.exit(CUPS_BACKEND_OK)
-	if len(sys.argv) not in (5,6):
+	if len(sys.argv) not in (6,7):
 		sys.stdout.write("Usage: %s job-id user title copies options [file]\n" % os.path.basename(sys.argv[0]))
 		sys.stdout.flush()
 		logger.error("Wrong number of arguments (%d). Usage %s job-id user" %(len(sys.argv[0]),  sys.argv[0]))
@@ -92,7 +95,7 @@ def main():
 		if s:
 			s.close()
 		logger.error('Could not connect to popup server. Error %s' %message)
-		sys.exit(CUPS_BACKEND_STOP)
+		sys.exit(CUPS_BACKEND_FAILED)
 		
 	s.send('GetPrintJobParameters')
 	data = s.recv(1024)
